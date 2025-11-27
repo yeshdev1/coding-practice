@@ -3,5 +3,8 @@
     "@babel/standalone": "^7.28.5",
     "@monaco-editor/react": "^4.7.0",
     "@types/babel__standalone": "^7.1.9"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }
