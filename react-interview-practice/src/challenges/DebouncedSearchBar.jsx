@@ -1,3 +1,5 @@
+import Requirements from '../components/Requirements';
+
 /**
  * Challenge: Debounced Search Bar
  * Difficulty: Medium
@@ -16,7 +18,12 @@ export default function DebouncedSearchBar() {
   return (
     <div>
       <h2>Debounced Search Bar</h2>
-      <p>Implement a search input that delays the API call until the user stops typing.</p>
+      <Requirements>
+            <li>Input field for search query.</li>
+            <li>Fetch results from a mock API (or real one) as user types.</li>
+            <li>DEBOUNCE the API call (only call after user stops typing for 500ms).</li>
+            <li>Display results.</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]

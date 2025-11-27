@@ -10,6 +10,7 @@
  */
 
 import { fetchComments, postReply } from '../api/mockApi';
+import Requirements from '../components/Requirements';
 
 export default function NestedComments() {
   // Use fetchComments() and postReply(parentId, text) here
@@ -17,7 +18,12 @@ export default function NestedComments() {
   return (
     <div>
       <h2>Nested Comments System</h2>
-      <p>Build a Reddit-style comment thread with infinite nesting and replies.</p>
+      <Requirements>
+            <li>Display a list of comments.</li>
+            <li>Allow replying to any comment (creating nested threads).</li>
+            <li>Support infinite depth of nesting.</li>
+            <li>Optimistic updates (UI updates before API confirmation).</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]

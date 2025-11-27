@@ -8,11 +8,17 @@
  * 3. Calculate positions using math/absolute positioning.
  */
 
+import Requirements from '../components/Requirements';
+
 export default function VirtualList() {
   return (
     <div>
       <h2>Virtual List / Windowing</h2>
-      <p>Render a list of 10,000 items efficiently by only rendering what is visible.</p>
+      <Requirements>
+            <li>Render a list of 10,000 items without lagging the browser.</li>
+            <li>Only render the items currently visible in the viewport (plus a buffer).</li>
+            <li>Calculate positions using math/absolute positioning.</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]

@@ -9,11 +9,18 @@
  * 4. Use HTML5 Drag & Drop API or mouse events.
  */
 
+import Requirements from '../components/Requirements';
+
 export default function DragAndDropBoard() {
   return (
     <div>
       <h2>Drag and Drop Board</h2>
-      <p>Create a Kanban-style board where items can be dragged between columns.</p>
+      <Requirements>
+            <li>Multiple columns (like Trello: Todo, In Progress, Done).</li>
+            <li>Drag items between columns.</li>
+            <li>Reorder items within a column.</li>
+            <li>Use HTML5 Drag & Drop API or mouse events.</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]

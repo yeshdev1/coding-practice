@@ -9,11 +9,18 @@
  * 4. Support multiple distinct modals if possible.
  */
 
+import Requirements from '../components/Requirements';
+
 export default function ModalSystem() {
   return (
     <div>
       <h2>Modal/Dialog System</h2>
-      <p>Create a global modal system accessible from anywhere in the component tree.</p>
+      <Requirements>
+            <li>Create a way to open a modal from anywhere (Context or Hook).</li>
+            <li>Modal should overlay the screen.</li>
+            <li>Close on clicking the background overlay or pressing Escape.</li>
+            <li>Support multiple distinct modals if possible.</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]

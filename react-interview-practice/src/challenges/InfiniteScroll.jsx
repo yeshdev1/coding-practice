@@ -9,6 +9,7 @@
  */
 
 import { fetchInfiniteItems } from '../api/mockApi';
+import Requirements from '../components/Requirements';
 
 export default function InfiniteScroll() {
   // Use fetchInfiniteItems(page, limit) here
@@ -16,7 +17,11 @@ export default function InfiniteScroll() {
   return (
     <div>
       <h2>Infinite Scroll</h2>
-      <p>Load more content automatically as the user scrolls to the bottom.</p>
+      <Requirements>
+            <li>Render a list of items.</li>
+            <li>When the user scrolls to the bottom, fetch and append more items.</li>
+            <li>Use IntersectionObserver for best performance.</li>
+      </Requirements>
       
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         [Your Implementation Goes Here]
