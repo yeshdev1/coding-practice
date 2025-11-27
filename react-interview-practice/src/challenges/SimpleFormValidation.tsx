@@ -11,6 +11,7 @@
 
 import React, { useState } from 'react';
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 const SimpleFormValidationImplementation = () => {
   const [email, setEmail] = useState<string>('');
@@ -54,6 +55,39 @@ const SimpleFormValidationImplementation = () => {
 }
 
 export default function SimpleFormValidation() {
+  const initialCode = `
+export default function LoginForm() {
+  const [email, setEmail] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email.includes('@')) {
+      setError('Invalid email address');
+    } else {
+      setError('');
+      alert('Success!');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ padding: '20px', maxWidth: '300px' }}>
+      <div style={{ marginBottom: '10px' }}>
+        <label>Email:</label>
+        <input 
+          type="text" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ display: 'block', width: '100%', marginTop: '5px' }}
+        />
+        {error && <span style={{ color: 'red', fontSize: '0.8rem' }}>{error}</span>}
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Simple Form Validation</h2>
@@ -64,6 +98,12 @@ export default function SimpleFormValidation() {
             <li>Show error messages below fields.</li>
       </Requirements>
       
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
+      </div>
+
+      <h3>Reference Implementation (Static)</h3>
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
         <SimpleFormValidationImplementation />
       </div>

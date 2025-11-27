@@ -10,10 +10,28 @@
 
 import { fetchInfiniteItems } from '../api/mockApi';
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 export default function InfiniteScroll() {
-  // Use fetchInfiniteItems(page, limit) here
-  
+  const initialCode = `
+export default function InfiniteList() {
+  const [items, setItems] = React.useState(Array.from({ length: 20 }));
+
+  // Implement IntersectionObserver here
+
+  return (
+    <div style={{ height: '300px', overflow: 'auto', border: '1px solid #ccc' }}>
+      {items.map((_, i) => (
+        <div key={i} style={{ padding: '20px', borderBottom: '1px solid #eee' }}>
+          Item {i + 1}
+        </div>
+      ))}
+      <div id="loader">Loading more...</div>
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Infinite Scroll</h2>
@@ -23,8 +41,9 @@ export default function InfiniteScroll() {
             <li>Use IntersectionObserver for best performance.</li>
       </Requirements>
       
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        [Your Implementation Goes Here]
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
       </div>
     </div>
   );

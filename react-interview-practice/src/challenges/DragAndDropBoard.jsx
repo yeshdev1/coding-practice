@@ -10,8 +10,53 @@
  */
 
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 export default function DragAndDropBoard() {
+  const initialCode = `
+export default function KanbanBoard() {
+  const [tasks, setTasks] = React.useState([
+    { id: 1, title: "Task 1", status: "todo" },
+    { id: 2, title: "Task 2", status: "doing" },
+    { id: 3, title: "Task 3", status: "done" }
+  ]);
+
+  const onDragStart = (e, id) => {
+    e.dataTransfer.setData("id", id);
+  };
+
+  const onDrop = (e, status) => {
+    const id = e.dataTransfer.getData("id");
+    setTasks(tasks.map(t => t.id == id ? { ...t, status } : t));
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '20px' }}>
+      {['todo', 'doing', 'done'].map(status => (
+        <div 
+          key={status}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => onDrop(e, status)}
+          style={{ width: '150px', minHeight: '200px', border: '1px solid #ccc', padding: '10px' }}
+        >
+          <h4>{status.toUpperCase()}</h4>
+          {tasks.filter(t => t.status === status).map(t => (
+            <div 
+              key={t.id} 
+              draggable 
+              onDragStart={(e) => onDragStart(e, t.id)}
+              style={{ padding: '10px', background: '#444', marginBottom: '5px', cursor: 'grab' }}
+            >
+              {t.title}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Drag and Drop Board</h2>
@@ -22,8 +67,9 @@ export default function DragAndDropBoard() {
             <li>Use HTML5 Drag & Drop API or mouse events.</li>
       </Requirements>
       
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        [Your Implementation Goes Here]
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
       </div>
     </div>
   );

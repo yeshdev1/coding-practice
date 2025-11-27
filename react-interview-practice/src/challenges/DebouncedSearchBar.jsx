@@ -1,4 +1,5 @@
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 /**
  * Challenge: Debounced Search Bar
@@ -13,8 +14,28 @@ import Requirements from '../components/Requirements';
 
 
 export default function DebouncedSearchBar() {
-  // Use searchItems(query) here
-  
+  const initialCode = `
+export default function Search() {
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState([]);
+
+  // Implement debounce logic here or inside useEffect
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <input 
+        placeholder="Search..." 
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <ul>
+        {results.map(r => <li key={r}>{r}</li>)}
+      </ul>
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Debounced Search Bar</h2>
@@ -25,8 +46,9 @@ export default function DebouncedSearchBar() {
             <li>Display results.</li>
       </Requirements>
       
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        [Your Implementation Goes Here]
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
       </div>
     </div>
   );

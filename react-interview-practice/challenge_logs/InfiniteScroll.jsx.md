@@ -79,3 +79,30 @@
 
 ✖ 1 problem (1 error, 0 warnings)
 ```
+
+## [11/27/2025, 2:03:54 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/InfiniteScroll.jsx
+  11:10  error  'fetchInfiniteItems' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+```
+
+## [11/27/2025, 2:04:00 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/InfiniteScroll.jsx
+  11:10  error  'fetchInfiniteItems' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+```
+
+## [11/27/2025, 2:04:43 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/InfiniteScroll.jsx
+  11:10  error  'fetchInfiniteItems' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+```

@@ -9,8 +9,30 @@
  */
 
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 export default function TrafficLight() {
+  const initialCode = `
+export default function TrafficLight() {
+  const [color, setColor] = React.useState('red');
+
+  // Implement useEffect cycle here
+
+  const style = (c) => ({
+    width: '50px', height: '50px', borderRadius: '50%', margin: '10px',
+    backgroundColor: c, opacity: color === c ? 1 : 0.3
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#333', padding: '10px', width: '80px' }}>
+      <div style={style('red')} />
+      <div style={style('yellow')} />
+      <div style={style('green')} />
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Traffic Light</h2>
@@ -20,8 +42,9 @@ export default function TrafficLight() {
             <li>Use useEffect and setTimeout.</li>
       </Requirements>
       
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        [Your Implementation Goes Here]
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
       </div>
     </div>
   );

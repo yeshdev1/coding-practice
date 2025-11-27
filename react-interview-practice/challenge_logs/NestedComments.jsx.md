@@ -88,3 +88,33 @@
 
 ✖ 2 problems (2 errors, 0 warnings)
 ```
+
+## [11/27/2025, 2:04:16 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/NestedComments.jsx
+  12:10  error  'fetchComments' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  12:25  error  'postReply' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+```
+
+## [11/27/2025, 2:04:22 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/NestedComments.jsx
+  12:10  error  'fetchComments' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  12:25  error  'postReply' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+```
+
+## [11/27/2025, 2:04:43 PM] Update
+### ⚠️ Lint Issues Found
+```
+/Users/yeshwanthdevabhaktuni/frontend-practice/react-interview-practice/src/challenges/NestedComments.jsx
+  12:10  error  'fetchComments' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  12:25  error  'postReply' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+```

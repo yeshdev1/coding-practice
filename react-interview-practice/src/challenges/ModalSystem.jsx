@@ -10,8 +10,34 @@
  */
 
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 export default function ModalSystem() {
+  const initialCode = `
+export default function ModalExample() {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setIsOpen(true)}>Open Modal</button>
+      
+      {isOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center'
+        }}>
+          <div style={{ background: 'white', padding: '20px', borderRadius: '8px', color: 'black' }}>
+            <h3>Modal Title</h3>
+            <p>This is a modal!</p>
+            <button onClick={() => setIsOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Modal/Dialog System</h2>
@@ -22,8 +48,9 @@ export default function ModalSystem() {
             <li>Support multiple distinct modals if possible.</li>
       </Requirements>
       
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        [Your Implementation Goes Here]
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
       </div>
     </div>
   );

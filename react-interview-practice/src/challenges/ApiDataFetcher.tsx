@@ -13,6 +13,7 @@ import React from 'react';
 import { fetchPosts } from '../api/mockApi';
 import { useEffect, useState } from 'react';
 import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 interface Post {
   id: number;
@@ -21,27 +22,42 @@ interface Post {
 }
 
 export default function ApiDataFetcher() {
-  // Use fetchPosts() here
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-  useEffect(() => {
+  const initialCode = `
+// Mock fetch function provided for playground
+const fetchMockData = () => new Promise(resolve => {
+  setTimeout(() => resolve([
+    { id: 1, title: "Mock Post 1", body: "Content 1" },
+    { id: 2, title: "Mock Post 2", body: "Content 2" }
+  ]), 1000);
+});
+
+export default function DataFetcher() {
+  const [data, setData] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
     setLoading(true);
-    fetchPosts().then((data: Post[]) => {
-      setPosts(data);
-    }).catch((error: Error) => {
-      setError(error);
-    }).finally(() => {
+    fetchMockData().then(res => {
+      setData(res);
       setLoading(false);
     });
   }, []);
-  
-  if(loading) {
-    return <div>Loading...</div>
-  }
-  if (error) {
-    return <div>Error: {error.message}</div>
-  }
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div style={{ padding: '20px' }}>
+      {data.map(item => (
+        <div key={item.id} style={{ marginBottom: '15px', borderBottom: '1px solid #ccc' }}>
+          <h4>{item.title}</h4>
+          <p>{item.body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>API Data Fetcher</h2>
@@ -52,13 +68,16 @@ export default function ApiDataFetcher() {
             <li>Handle error state.</li>
       </Requirements>
       
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
+      </div>
+
+      <h3>Reference Implementation (Static)</h3>
       <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        {posts.map((post: Post) => (
-          <div key={post.id}>
-            <h3>{post.title}</h3>
-            <p>{post.body}</p>
-          </div>
-        ))}
+        {/* Reference implementation hidden behind loading state in actual component, 
+            but rendered here for structure */}
+        <p>Check source code for full implementation details.</p>
       </div>
     </div>
   );

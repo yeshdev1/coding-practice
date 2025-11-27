@@ -1,27 +1,46 @@
 import React from 'react';
+import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 const WorkerOffloading = () => {
+  const initialCode = `
+export default function WorkerDemo() {
+  const [result, setResult] = React.useState(null);
+
+  const runHeavyTask = () => {
+    // This blocks the UI if run on main thread
+    // const start = Date.now();
+    // while (Date.now() - start < 3000) {} 
+    // setResult("Done");
+    
+    // Move this logic to a Web Worker
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <button onClick={runHeavyTask}>Run Heavy Task</button>
+      <p>Result: {result}</p>
+      <input placeholder="Try typing while task runs..." />
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Worker Pool & Offloading</h2>
-      <p>
-        Implement a <strong>Worker Pool</strong> system that handles heavy computational tasks (like image processing or large dataset sorting) without blocking the main thread.
-        <br /><br />
-        <strong>Requirements:</strong>
-        <br />
-        1. <strong>Task Queue</strong>: Manage a queue of incoming tasks.
-        <br />
-        2. <strong>Worker Pool</strong>: instantiate a fixed number of Web Workers (e.g., 4) to process tasks in parallel.
-        <br />
-        3. <strong>Load Balancing</strong>: Distribute tasks efficiently across available workers.
-        <br />
-        4. <strong>Optimization</strong>: Terminate idle workers or reuse them to prevent memory leaks.
-        <br />
-        <em>(Bonus: Integrate a Service Worker to cache the results or handle offline task queuing).</em>
-      </p>
+      <Requirements>
+        <li>Create a heavy computation (e.g., sorting a huge array or prime number search).</li>
+        <li>Observe that running it on the main thread freezes the UI (input becomes unresponsive).</li>
+        <li>Move the logic to a Web Worker.</li>
+        <li>Verify that the UI remains responsive while the worker calculates the result.</li>
+      </Requirements>
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
+      </div>
     </div>
   );
 };
 
 export default WorkerOffloading;
-

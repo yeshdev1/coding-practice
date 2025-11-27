@@ -1,25 +1,39 @@
 import React from 'react';
+import Requirements from '../components/Requirements';
+import CodePlayground from '../components/CodePlayground';
 
 const CollaborativeSpreadsheet = () => {
+  const initialCode = `
+export default function Spreadsheet() {
+  // This is an expert level challenge.
+  // Start by rendering a simple virtualized grid.
+  
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3>Spreadsheet</h3>
+      <div style={{ width: '100%', height: '400px', border: '1px solid #ccc' }}>
+        {/* Grid goes here */}
+      </div>
+    </div>
+  );
+}
+`;
+
   return (
     <div>
       <h2>Collaborative Spreadsheet Engine (Expert)</h2>
-      <p>
-        Build a high-performance, collaborative spreadsheet application (like Google Sheets) from scratch.
-        <br /><br />
-        <strong>Core Requirements:</strong>
-        <br />
-        1. <strong>Virtualization</strong>: Render a grid of 1,000,000+ cells efficiently (Canvas or DOM).
-        <br />
-        2. <strong>Formula Engine</strong>: Implement a dependency graph (DAG) to evaluate formulas (=A1+B2) and handle circular dependency detection.
-        <br />
-        3. <strong>CRDT / OT</strong>: Implement a Conflict-free Replicated Data Type (or Operational Transformation) system to handle real-time concurrent edits from multiple users (simulate via multiple windows/BroadcastChannel).
-        <br />
-        4. <strong>Undo/Redo</strong>: History management that works with the collaborative nature of the document.
-      </p>
+      <Requirements>
+        <li><strong>Virtualization:</strong> Render a grid of 1,000,000+ cells efficiently.</li>
+        <li><strong>Formula Engine:</strong> Parse strings starting with `=` and evaluate simple math (e.g., `=A1+B2`).</li>
+        <li><strong>Reactivity:</strong> Updating cell A1 should automatically update any cell dependent on it (DAG).</li>
+        <li><strong>Bonus:</strong> Simulate multi-user collaboration logic (CRDT placeholder).</li>
+      </Requirements>
+      <div style={{ marginBottom: '20px' }}>
+         <h3>Live Playground</h3>
+         <CodePlayground initialCode={initialCode} />
+      </div>
     </div>
   );
 };
 
 export default CollaborativeSpreadsheet;
-
