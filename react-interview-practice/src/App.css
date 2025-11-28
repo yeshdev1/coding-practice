@@ -12,10 +12,19 @@
   min-height: 100vh;
 }
 
+.app-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
 .logos {
   display: flex;
   justify-content: center;
   gap: 2rem;
+  margin-bottom: 1rem;
 }
 
 .logo {
@@ -41,6 +50,82 @@
     animation: logo-spin infinite 20s linear;
   }
 }
+
+/* Controls Section */
+.controls-container {
+  width: 100%;
+  max-width: 900px;
+  background-color: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .controls-container {
+    flex-direction: row;
+  }
+}
+
+.search-wrapper {
+  flex: 1;
+  text-align: left;
+}
+
+.search-wrapper label, .filter-group label {
+  display: block;
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 0.5rem;
+}
+
+.search-wrapper input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-wrapper input:focus, .filter-group select:focus {
+  border-color: #646cff;
+}
+
+.filters-wrapper {
+  display: flex;
+  gap: 1rem;
+}
+
+.filter-group {
+  text-align: left;
+  min-width: 160px;
+}
+
+.filter-group select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right .7em top 50%;
+  background-size: .65em auto;
+}
+
 
 /* Challenge List Grid */
 .difficulty-header {
@@ -74,6 +159,34 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  min-height: 100px;
+}
+
+.plevel-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  background-color: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  font-family: monospace;
+}
+
+.time-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #4ade80; /* Bright green */
+  background-color: rgba(74, 222, 128, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  font-family: monospace;
 }
 
 .challenge-card.easy:hover { border-color: #4ade80; }
@@ -85,9 +198,14 @@
   background-color: #242424;
 }
 
-/* ... rest of CSS ... */
+.no-results {
+    margin-top: 4rem;
+    font-size: 1.2rem;
+    color: #888;
+}
 
-/* Isolated Challenge View */
+
+/* Challenge View */
 .challenge-view-container {
   width: 100vw;
   min-height: 100vh;
@@ -97,7 +215,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  background-color: #242424; /* Match main background */
+  background-color: #242424; 
 }
 
 .challenge-header {
@@ -126,4 +244,136 @@
 
 .challenge-workspace {
   width: 100%;
+}
+
+/* CodePlayground Styles (if not already defined) */
+.code-playground {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+@media (min-width: 1024px) {
+  .code-playground {
+    flex-direction: row;
+  }
+}
+
+.editor-section, .preview-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-section {
+  border-bottom: 1px solid #444;
+}
+@media (min-width: 1024px) {
+  .editor-section {
+    border-bottom: none;
+    border-right: 1px solid #444;
+  }
+}
+
+.editor-header, .preview-header {
+  padding: 10px 16px;
+  background-color: #252526;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.run-button {
+  background-color: #2f8542;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+.run-button:hover {
+  background-color: #38a14e;
+}
+
+.editor-container {
+  flex: 1;
+  position: relative;
+}
+
+.preview-box {
+  flex: 1;
+  padding: 20px;
+  background-color: #f0f0f0; 
+  color: #333;
+  overflow: auto;
+  position: relative;
+}
+
+.error-message {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ffcdd2;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.placeholder-text {
+  color: #888;
+  text-align: center;
+  margin-top: 20%;
+}
+
+.instructions-card {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.requirements-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.requirements-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.requirements-content {
+    padding: 0 20px 20px;
+    border-top: 1px solid #444;
+}
+
+.requirements-content ul {
+    padding-left: 20px;
+    margin: 10px 0 0;
+    text-align: left;
+}
+
+.requirements-content li {
+    margin-bottom: 6px;
+    line-height: 1.5;
 }
