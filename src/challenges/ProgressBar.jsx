@@ -27,7 +27,7 @@ export default function ProgressBarDemo() {
         <li>Create a progress bar that visually fills from 0% to 100%.</li>
         <li>Support animation when the value changes.</li>
         <li>Allow control via props (value) or buttons.</li>
-        <li>Handle edge cases (negative values, >100%).</li>
+        <li>Handle edge cases (negative values, &gt;100%).</li>
       </Requirements>
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>

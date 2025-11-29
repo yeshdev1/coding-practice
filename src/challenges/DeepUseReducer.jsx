@@ -31,7 +31,7 @@ export default function WizardForm() {
     <div>
       <h2>Full State Machine with useReducer</h2>
       <Requirements>
-        <li>Build a multi-step form wizard (Step 1 -> Step 2 -> Submit).</li>
+        <li>Build a multi-step form wizard (Step 1 -&gt; Step 2 -&gt; Submit).</li>
         <li>Use `useReducer` to manage the entire flow as a Finite State Machine.</li>
         <li>Handle transitions: `NEXT_STEP`, `PREV_STEP`, `UPDATE_FIELD`, `SUBMIT`, `SUCCESS`, `ERROR`.</li>
         <li>Implement "Undo" functionality by storing past states in the reducer (Time Travel).</li>

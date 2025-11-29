@@ -1,7 +1,7 @@
 import os
 import shutil
 
-source_dir = "react-interview-practice"
+source_dir = "coding-practice"
 target_dir = "."
 
 items_to_move = [
