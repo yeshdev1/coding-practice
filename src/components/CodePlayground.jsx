@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
 import * as Babel from '@babel/standalone';
+import ChallengeTimer from './ChallengeTimer';
 
-const CodePlayground = ({ initialCode, scope = {} }) => {
+const CodePlayground = ({ initialCode, scope = {}, expectedTime }) => {
   const [code, setCode] = useState(initialCode || '');
   const [error, setError] = useState(null);
   const [PreviewComponent, setPreviewComponent] = useState(null);
+  
+  // Extract expected time in minutes from string (e.g., "20m" -> 20)
+  const defaultTime = expectedTime ? parseInt(expectedTime) * 60 : 0;
   
   // Function to compile and run the code
   const runCode = () => {
@@ -65,9 +69,12 @@ const CodePlayground = ({ initialCode, scope = {} }) => {
       <div className="editor-section">
         <div className="editor-header">
           <span>Code Editor (JSX)</span>
-          <button className="run-button" onClick={runCode}>
-            ▶ Run Code
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ChallengeTimer initialTime={defaultTime} isCountdown={!!expectedTime} />
+            <button className="run-button" onClick={runCode}>
+                ▶ Run Code
+            </button>
+          </div>
         </div>
         <div className="editor-container">
             <Editor

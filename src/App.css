@@ -246,6 +246,89 @@
   width: 100%;
 }
 
+/* Timer Styles */
+.challenge-timer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #252526;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+.timer-display {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #4ade80;
+  min-width: 80px;
+  text-align: center;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.timer-btn {
+  background-color: #333;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+}
+
+.timer-btn.stop {
+  background-color: #333;
+  color: #e0e0e0;
+}
+
+.timer-btn.start {
+  background-color: #333;
+  color: #e0e0e0;
+}
+
+.timer-btn.reset {
+  background-color: #333;
+  color: #e0e0e0;
+}
+
+.timer-settings {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.timer-settings label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.countdown-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.countdown-input input {
+  width: 40px;
+  padding: 2px 4px;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: white;
+  text-align: center;
+}
+
 /* CodePlayground Styles (if not already defined) */
 .code-playground {
   display: flex;
@@ -376,4 +459,101 @@
 .requirements-content li {
     margin-bottom: 6px;
     line-height: 1.5;
+}
+
+/* Navigation */
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.nav-link {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  color: white;
+  background-color: #333;
+}
+
+.nav-link.active {
+  color: white;
+  background-color: #646cff;
+  font-weight: bold;
+}
+
+/* Home Page Styles */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  width: 100%;
+}
+
+.domain-cards {
+  display: flex;
+  gap: 3rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.domain-card {
+  width: 300px;
+  height: 200px;
+  border: 1px solid #444;
+  border-radius: 16px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #1a1a1a;
+}
+
+.domain-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.domain-card.frontend:hover {
+  border-color: #61dafb;
+  background: linear-gradient(145deg, #1a1a1a, #202b33);
+}
+
+.domain-card.backend:hover {
+  border-color: #68a063;
+  background: linear-gradient(145deg, #1a1a1a, #1e261e);
+}
+
+.domain-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2rem;
+}
+
+.domain-card p {
+  color: #aaa;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Update nav-link to support button styles (reset defaults) */
+button.nav-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
