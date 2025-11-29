@@ -1,9 +1,9 @@
 {
-  "name": "react-interview-practice",
+  "name": "coding-practice",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://yeshwanthdevabhaktuni.github.io/frontend-practice",
+  "homepage": "https://yeshwanthdevabhaktuni.github.io/coding-practice",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
