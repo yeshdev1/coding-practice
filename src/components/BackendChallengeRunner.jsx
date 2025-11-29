@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import ChallengeTimer from './ChallengeTimer';
 
@@ -33,7 +33,7 @@ const BackendChallengeRunner = ({ challenge }) => {
       setFiles({ 'Solution.js': challenge.initialCode || '' });
       setActiveFile('Solution.js');
     }
-  }, [challenge.id]);
+  }, [challenge.id, challenge.type, challenge.steps, challenge.initialCode]);
 
   const handleCodeChange = (value) => {
     setFiles(prev => ({ ...prev, [activeFile]: value }));
@@ -52,7 +52,7 @@ const BackendChallengeRunner = ({ challenge }) => {
 
     const mockSystem = {
       db: {
-        store: { ...challenge.mockDb } || {},
+        store: { ...(challenge.mockDb || {}) },
         async get(key) { return this.store[key]; },
         async set(key, val) { this.store[key] = val; },
         async incr(key, amount = 1) { 
@@ -69,7 +69,7 @@ const BackendChallengeRunner = ({ challenge }) => {
       cache: {
         store: {},
         async get(key) { return this.store[key] || null; },
-        async set(key, val, ttl) { this.store[key] = val; }, 
+        async set(key, val, /* _ttl */) { this.store[key] = val; }, 
         async del(key) { delete this.store[key]; }
       },
       queue: {
@@ -107,20 +107,26 @@ const BackendChallengeRunner = ({ challenge }) => {
         const fileCode = files[fileName];
         
         const wrappedCode = `
-          const require = (name) => {
+          const _customRequire = (name) => {
              // Simple require to access previous modules
              // e.g. require('./InventoryService.js')
              const cleanName = name.replace('./', '');
              return modules[cleanName] || {};
           };
           
-          const exports = {};
+          const _exports = {};
           // We support user writing "module.exports = ..." OR "export const ..." (babel transform needed for real ES6 but here we cheat)
           // To keep it simple without babel in backend runner yet: assume user assigns to 'exports' or returns a value.
           // Let's inject 'exports' and 'module' objects.
           
-          const module = { exports: {} };
+          const _module = { exports: {} };
           
+          // Inject our custom require as 'require' in the scope of the user code
+          // This works because we're inside a new function scope
+          const require = _customRequire;
+          const module = _module;
+          const exports = _exports;
+
           ${fileCode}
           
           // Capture what user exported
@@ -130,10 +136,13 @@ const BackendChallengeRunner = ({ challenge }) => {
           return typeof solution !== 'undefined' ? solution : null;
         `;
 
-        const fileFn = new Function('console', 'system', 'require', 'module', 'exports', 'modules', wrappedCode);
+        // We pass 'null' for the 'require' argument to new Function to avoid the collision,
+        // or we can just not pass it and define it inside.
+        // Let's remove 'require', 'module', and 'exports' from the arguments list of new Function to be safe.
+        const fileFn = new Function('console', 'system', 'modules', wrappedCode);
         
         // Run the file code
-        const exported = fileFn(mockConsole, mockSystem, (name) => modules[name.replace('./', '')], {}, {}, modules);
+        const exported = fileFn(mockConsole, mockSystem, modules);
         
         modules[fileName] = exported;
       }
