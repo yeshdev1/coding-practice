@@ -174,6 +174,73 @@ export const backendChallenges = [
     initialCode: `function solution(obj) { return {}; }`,
     testCases: [{ input: {a:{b:1}}, expected: {"a.b":1} }]
   },
+  {
+    id: 'cursor-pagination',
+    title: 'Infinite Scroll API (Cursor Pagination)',
+    difficulty: 'medium',
+    pLevel: 'p1',
+    expectedTime: '30m',
+    description: `**Scenario:** The "Social Feed" endpoint is getting slower as users scroll deeper. We are currently using Offset-based pagination (\`SKIP 10000 LIMIT 10\`), which is O(N). We need to switch to Cursor-based pagination for O(1) performance.
+
+**Task:** Implement \`getFeed(cursor, limit)\`.
+- The \`cursor\` is the ID of the last item seen.
+- Assume items have sequential IDs.
+- Return \`nextItems\` (where ID > cursor) and the new \`nextCursor\`.`,
+    initialCode: `const db = [
+  { id: 1, content: 'A' },
+  { id: 2, content: 'B' },
+  { id: 3, content: 'C' },
+  { id: 4, content: 'D' },
+  { id: 5, content: 'E' }
+];
+
+function solution({ cursor, limit }) {
+  const start = cursor ? db.findIndex(i => i.id === cursor) + 1 : 0;
+  return { data: [], nextCursor: null };
+}`,
+    testCases: [{ input: { cursor: 2, limit: 2 }, expected: { data: [{id:3, content:'C'}, {id:4, content:'D'}], nextCursor: 4 } }]
+  },
+  {
+    id: 'rbac-middleware',
+    title: 'Role-Based Access Control',
+    difficulty: 'medium',
+    pLevel: 'p1',
+    expectedTime: '25m',
+    description: `**Scenario:** We have a mix of "Admins", "Editors", and "Viewers". We need a central middleware to enforce permissions so we don't have \`if (user.role === 'admin')\` scattered everywhere.
+
+**Task:** Implement \`checkPermission(user, resource, action)\`.
+- Policies:
+  - Admin: Allow everything.
+  - Editor: Allow 'read'/'write' on 'articles'.
+  - Viewer: Allow 'read' only.
+- Return \`true\` or \`false\`.`,
+    initialCode: `function solution({ user, resource, action }) {
+  return false;
+}`,
+    testCases: [{ input: { user: { role: 'viewer' }, resource: 'articles', action: 'write' }, expected: false }]
+  },
+  {
+    id: 'idempotency-key',
+    title: 'Idempotency Mechanism',
+    difficulty: 'medium',
+    pLevel: 'p2',
+    expectedTime: '30m',
+    description: `**Scenario:** If a client's network fails after sending a payment request, they retry. Without Idempotency, we might charge them twice.
+
+**Task:** Implement \`processRequest(req)\`.
+- \`req\` contains \`idempotencyKey\`.
+- If key is seen for the first time: Process it (return "processed"), store result.
+- If key was seen before: Return the *cached* result immediately (do not process again).
+- Use a local object or \`system.cache\` to store keys.`,
+    initialCode: `const seen = {};
+function solution(req) {
+  // Check seen
+  return "processed";
+}`,
+    testCases: [
+      { input: { idempotencyKey: 'k1', data: 'charge' }, expected: "processed" }
+    ]
+  },
 
   // --- SYSTEM DESIGN CHALLENGES (MEDIUM/HARD) ---
   {
@@ -838,6 +905,96 @@ It manages the transaction lifecycle:
 };`,
         testCases: [
           { input: { method: 'runTransaction', args: ['tx_100', []] }, expected: "COMMITTED", mode: 'method_call' }
+        ]
+      }
+    ]
+  },
+
+  {
+    id: 'federated-feed',
+    title: 'Mega-Feed Aggregator',
+    difficulty: 'expert',
+    pLevel: 'p3',
+    expectedTime: '90m',
+    type: 'multi-step',
+    description: '**Scenario:** You are building the "Home Feed" for a massive social network. It aggregates content from 3 distinct microservices: "FriendsPosts", "GroupUpdates", and "RecommendedAds". All streams are infinite. You must merge them into a single time-sorted stream and support resumable scrolling (cursors).',
+    steps: [
+      {
+        id: 's1',
+        title: 'Merge Sorted Streams',
+        fileName: 'Merger.js',
+        description: `**Task:** Algorithmically merge multiple sorted arrays.
+Implement \`merge(streams)\`.
+- \`streams\` is an array of arrays: \`[[{id:10, t:100}, {id:8, t:90}], [{id:9, t:95}]]\`.
+- All inputs are sorted by Time (descending).
+- Return a single flattened array sorted by Time (descending).`,
+        initialCode: `module.exports = {
+  merge(streams) {
+    // Efficiently merge K sorted arrays
+    return [];
+  }
+};`,
+        testCases: [
+          { 
+            input: { method: 'merge', args: [[[{id:1, t:10}], [{id:2, t:20}]]] }, 
+            expected: [{id:2, t:20}, {id:1, t:10}], 
+            mode: 'method_call' 
+          }
+        ]
+      },
+      {
+        id: 's2',
+        title: 'Cursor Tokenizer',
+        fileName: 'Tokenizer.js',
+        description: `**Task:** State Management.
+We can't use a simple DB offset because we are reading from 3 different sources.
+Our "Global Cursor" must encode the state of *each* sub-stream.
+- Implement \`encode(cursors)\`: takes \`{ friends: 'id_a', groups: 'id_b', ads: 'id_c' }\` and returns a Base64 string.
+- Implement \`decode(token)\`: reverses it.`,
+        initialCode: `module.exports = {
+  encode(cursors) {
+    // JSON stringify -> Base64
+    return "";
+  },
+  decode(token) {
+    return {};
+  }
+};`,
+        testCases: [
+          { input: { method: 'encode', args: [{a:1}] }, validator: (res) => typeof res === 'string', expected: "eyJhIjoxfQ==", mode: 'method_call' } // Simple check
+        ]
+      },
+      {
+        id: 's3',
+        title: 'Feed Service',
+        fileName: 'Feed.js',
+        description: `**Task:** The Aggregator.
+Implement \`getFeed(globalCursorToken, limit)\`.
+1. Decode token to get last-seen IDs for Friends, Groups, and Ads.
+2. Fetch next batch from each service (mocked as \`system.db.scan\` or similar).
+3. Merge them using your Merger.
+4. Slice to \`limit\`.
+5. Generate new cursor token from the last items of the used streams.`,
+        initialCode: `const Merger = require('./Merger.js');
+const Tokenizer = require('./Tokenizer.js');
+
+const mockSources = {
+  friends: [{id:100, t:100}, {id:90, t:90}],
+  groups: [{id:95, t:95}],
+  ads: []
+};
+
+module.exports = {
+  async getFeed(token, limit) {
+    // 1. Decode
+    // 2. Fetch (use mockSources)
+    // 3. Merge
+    // 4. Return { items, nextCursor }
+    return { items: [], nextCursor: "" };
+  }
+};`,
+        testCases: [
+          { input: { method: 'getFeed', args: [null, 2] }, expected: { items: [{id:100,t:100}, {id:95,t:95}], nextCursor: "..." }, validator: (res) => res.items.length === 2 && res.items[0].id === 100, mode: 'method_call' }
         ]
       }
     ]
