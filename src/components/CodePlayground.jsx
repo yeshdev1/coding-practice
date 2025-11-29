@@ -13,6 +13,14 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime }) => {
   
   // Function to compile and run the code
   const runCode = () => {
+    // Track event in Google Analytics
+    if (typeof window.gtag === 'function') {
+        window.gtag('event', 'run_code_frontend', {
+            event_category: 'engagement',
+            event_label: 'code_playground'
+        });
+    }
+
     setError(null);
     try {
       // 1. Transform JSX/ES6 to ES5

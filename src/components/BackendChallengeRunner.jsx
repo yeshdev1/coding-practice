@@ -40,6 +40,14 @@ const BackendChallengeRunner = ({ challenge }) => {
   };
 
   const runTests = async () => {
+    // Track event in Google Analytics
+    if (typeof window.gtag === 'function') {
+        window.gtag('event', 'run_tests_backend', {
+            event_category: 'engagement',
+            event_label: challenge.id
+        });
+    }
+
     setLogs([]);
     setTestResults(null);
     
