@@ -85,7 +85,11 @@ State: { time: 10, isRunning: false }
       </Requirements>
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={CountdownTimerImplementation} />
+         <CodePlayground 
+            initialCode={initialCode} 
+            solutionComponent={CountdownTimerImplementation} 
+            problemDescription="Implement a countdown timer that starts from a specified time (e.g. 10s), allows pausing and resuming, stops at 0, and handles setInterval cleanup properly."
+         />
       </div>
     </div>
   );

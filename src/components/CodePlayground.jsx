@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
 import * as Babel from '@babel/standalone';
 import ChallengeTimer from './ChallengeTimer';
+import AiAssistant from './AiAssistant';
 
-const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionComponent: SolutionComponent }) => {
+const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionComponent: SolutionComponent, problemDescription }) => {
   const [code, setCode] = useState(initialCode || '');
   const [error, setError] = useState(null);
   const [PreviewComponent, setPreviewComponent] = useState(null);
-  const [activeTab, setActiveTab] = useState('preview'); // 'preview' | 'solution'
+  const [activeTab, setActiveTab] = useState('preview'); // 'preview' | 'solution' | 'ai'
   
   // Extract expected time in minutes from string (e.g., "20m" -> 20)
   const defaultTime = expectedTime ? parseInt(expectedTime) * 60 : 0;
@@ -118,10 +119,16 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionCompone
                         Sample Solution
                     </button>
                 )}
+                <button 
+                    className={`tab-button ${activeTab === 'ai' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('ai')}
+                >
+                    AI Review (Beta)
+                </button>
             </div>
         </div>
-        <div className="preview-box">
-            {activeTab === 'preview' ? (
+        <div className="preview-box" style={activeTab === 'ai' ? { padding: 0, backgroundColor: '#1a1a1a', overflow: 'hidden', display: 'flex', flexDirection: 'column' } : {}}>
+            {activeTab === 'preview' && (
                 <>
                     {error && <div className="error-message"><pre>{error}</pre></div>}
                     {!error && PreviewComponent && (
@@ -133,10 +140,18 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionCompone
                         <div className="placeholder-text">Click "Run Code" to see the output.</div>
                     )}
                 </>
-            ) : (
+            )}
+            {activeTab === 'solution' && (
                 <div className="sandbox-render">
                     {SolutionComponent ? <SolutionComponent /> : <div>No solution available.</div>}
                 </div>
+            )}
+            {activeTab === 'ai' && (
+                 <AiAssistant 
+                    code={code}
+                    problemDescription={problemDescription || "Review the user's React code. Identify potential bugs, performance issues, and suggest improvements. Focus on React best practices."}
+                    language="javascript"
+                />
             )}
         </div>
       </div>
@@ -145,4 +160,3 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionCompone
 };
 
 export default CodePlayground;
-

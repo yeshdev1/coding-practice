@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import ChallengeTimer from './ChallengeTimer';
+import AiAssistant from './AiAssistant';
 
 const BackendChallengeRunner = ({ challenge }) => {
   // Multi-file support: code is now an object { 'filename': 'content' } if type is 'multi-step'
@@ -10,7 +11,7 @@ const BackendChallengeRunner = ({ challenge }) => {
   const [files, setFiles] = useState({}); 
   const [activeFile, setActiveFile] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
-  const [activeTab, setActiveTab] = useState('problem'); // 'problem' | 'concepts'
+  const [activeTab, setActiveTab] = useState('problem'); // 'problem' | 'concepts' | 'ai'
   const [language, setLanguage] = useState('javascript'); // 'javascript' | 'python'
   
   const [logs, setLogs] = useState([]);
@@ -660,9 +661,15 @@ import ${activeFileName}
                     )}
                 </div>
             )}
+            <button 
+                className={`tab-button ${activeTab === 'ai' ? 'active' : ''}`}
+                onClick={() => setActiveTab('ai')}
+            >
+                AI Code Review (Beta)
+            </button>
         </div>
 
-      {activeTab === 'problem' ? (
+      {activeTab === 'problem' && (
         <div className="backend-runner-container" style={{ display: 'flex', flex: 1, gap: '20px', flexDirection: 'column', minHeight: 0 }}>
         
         <div className="instructions-panel" style={{ backgroundColor: '#1e1e1e', padding: '1rem', borderRadius: '8px', border: '1px solid #333', maxHeight: '200px', overflowY: 'auto' }}>
@@ -815,7 +822,9 @@ import ${activeFileName}
             </div>
         </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'concepts' && (
         <div className="concepts-container" style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#1e1e1e', borderRadius: '8px', border: '1px solid #333' }}>
             <h2 style={{ marginTop: 0, borderBottom: '1px solid #444', paddingBottom: '10px' }}>Key Concepts & Resources</h2>
             <p style={{ color: '#aaa', marginBottom: '2rem' }}>
@@ -857,6 +866,14 @@ import ${activeFileName}
                 </div>
             )}
         </div>
+      )}
+
+      {activeTab === 'ai' && (
+        <AiAssistant 
+            code={files[activeFile] || ''} 
+            problemDescription={activeStepObj.description}
+            language={language}
+        />
       )}
     </div>
   );
