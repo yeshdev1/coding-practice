@@ -3,10 +3,11 @@ import Editor from '@monaco-editor/react';
 import * as Babel from '@babel/standalone';
 import ChallengeTimer from './ChallengeTimer';
 
-const CodePlayground = ({ initialCode, scope = {}, expectedTime }) => {
+const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionComponent: SolutionComponent }) => {
   const [code, setCode] = useState(initialCode || '');
   const [error, setError] = useState(null);
   const [PreviewComponent, setPreviewComponent] = useState(null);
+  const [activeTab, setActiveTab] = useState('preview'); // 'preview' | 'solution'
   
   // Extract expected time in minutes from string (e.g., "20m" -> 20)
   const defaultTime = expectedTime ? parseInt(expectedTime) * 60 : 0;
@@ -102,17 +103,40 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime }) => {
 
       <div className="preview-section">
         <div className="preview-header">
-            <span>Preview Output</span>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                    className={`tab-button ${activeTab === 'preview' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('preview')}
+                >
+                    Preview Output
+                </button>
+                {SolutionComponent && (
+                    <button 
+                        className={`tab-button ${activeTab === 'solution' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('solution')}
+                    >
+                        Sample Solution
+                    </button>
+                )}
+            </div>
         </div>
         <div className="preview-box">
-            {error && <div className="error-message"><pre>{error}</pre></div>}
-            {!error && PreviewComponent && (
-            <div className="sandbox-render">
-                <PreviewComponent />
-            </div>
-            )}
-            {!error && !PreviewComponent && (
-                <div className="placeholder-text">Click "Run Code" to see the output.</div>
+            {activeTab === 'preview' ? (
+                <>
+                    {error && <div className="error-message"><pre>{error}</pre></div>}
+                    {!error && PreviewComponent && (
+                    <div className="sandbox-render">
+                        <PreviewComponent />
+                    </div>
+                    )}
+                    {!error && !PreviewComponent && (
+                        <div className="placeholder-text">Click "Run Code" to see the output.</div>
+                    )}
+                </>
+            ) : (
+                <div className="sandbox-render">
+                    {SolutionComponent ? <SolutionComponent /> : <div>No solution available.</div>}
+                </div>
             )}
         </div>
       </div>

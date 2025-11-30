@@ -21,6 +21,39 @@ interface Post {
   body: string;
 }
 
+const ApiDataFetcherImplementation = () => {
+  const [data, setData] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    setLoading(true);
+    fetchPosts()
+      .then((res) => {
+        setData(res);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Failed to fetch data');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <h2>API Data Fetcher</h2>
+      <ul>
+        {data.map((post) => (
+          <li key={post.id}>{post.title}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function ApiDataFetcher() {
   const initialCode = `
 // Mock fetch function provided for playground
@@ -61,6 +94,21 @@ export default function DataFetcher() {
   return (
     <div>
       <h2>API Data Fetcher</h2>
+      <p>
+        <strong>Scenario:</strong> Fetch and display data from an external source, handling all network states.
+        <pre>{`
+[ Component Mounts ] -> [ Loading... ]
+         |
+    (Async Fetch)
+         |
+         v
+   (Success?)  ----->  (Failure?)
+       |                   |
+[ Data Loaded ]        [ Error Message ]
+- Item 1
+- Item 2
+        `}</pre>
+      </p>
       <Requirements>
             <li>Fetch data from a public API (e.g., https://jsonplaceholder.typicode.com/posts).</li>
             <li>Display the data in a list.</li>
@@ -70,16 +118,8 @@ export default function DataFetcher() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} />
-      </div>
-
-      <h3>Reference Implementation (Static)</h3>
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        {/* Reference implementation hidden behind loading state in actual component, 
-            but rendered here for structure */}
-        <p>Check source code for full implementation details.</p>
+         <CodePlayground initialCode={initialCode} solutionComponent={ApiDataFetcherImplementation} />
       </div>
     </div>
   );
 }
-

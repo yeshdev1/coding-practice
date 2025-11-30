@@ -557,3 +557,26 @@ button.nav-link {
   cursor: pointer;
   font-family: inherit;
 }
+
+/* Code Playground Tabs */
+.tab-button {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #ccc;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tab-button.active {
+  color: #fff;
+  background-color: #333;
+}

@@ -242,6 +242,97 @@ function solution(req) {
     ]
   },
 
+  {
+    id: 'leaky-bucket',
+    title: 'Leaky Bucket Rate Limiter',
+    difficulty: 'medium',
+    pLevel: 'p2',
+    expectedTime: '35m',
+    description: `**Scenario:** We need to smooth out bursty traffic to our API. The "Leaky Bucket" algorithm allows requests to queue up but processes them at a constant rate.
+
+**Task:** Implement a class \`LeakyBucket\`.
+- \`capacity\`: Max requests the bucket can hold.
+- \`leakRate\`: Requests processed per second (simulated).
+- \`addRequest()\`: Returns \`true\` if added to bucket, \`false\` if bucket is full (dropped).
+- \`tick()\`: Removes requests from the bucket based on leak rate. Return number of leaked items.`,
+    initialCode: `class LeakyBucket {
+  constructor(capacity, leakRate) {
+    this.capacity = capacity;
+    this.leakRate = leakRate;
+    this.current = 0;
+  }
+
+  addRequest() {
+    return true;
+  }
+
+  tick() {
+    // Leaks items
+    return 0;
+  }
+}
+
+// Wrapper for tester
+const bucket = new LeakyBucket(10, 2);
+function solution(action) {
+  if (action === 'add') return bucket.addRequest();
+  if (action === 'tick') return bucket.tick();
+}`,
+    testCases: [
+      { input: 'add', expected: true },
+      { input: 'tick', expected: 0 } // Expect 0 initially if empty, depends on implementation logic flow
+    ]
+  },
+
+  {
+    id: 'task-scheduler',
+    title: 'Dependency Task Scheduler',
+    difficulty: 'medium',
+    pLevel: 'p2',
+    expectedTime: '40m',
+    description: `**Scenario:** We have a build system where tasks depend on others (e.g., 'build' depends on 'lint' and 'test'). We need to determine the execution order.
+
+**Task:** Implement \`schedule(tasks)\`.
+- Input: \`{ 'build': ['lint', 'test'], 'lint': [], 'test': [] }\`.
+- Output: Array of tasks in valid topological order (e.g., \`['lint', 'test', 'build']\`).
+- If a cycle is detected (A -> B -> A), return \`"cycle"\`.`,
+    initialCode: `function solution(tasks) {
+  // Topological Sort
+  return [];
+}`,
+    testCases: [
+      { input: { 'a': ['b'], 'b': [] }, expected: ['b', 'a'] }
+    ]
+  },
+
+  {
+    id: 'pub-sub-wildcard',
+    title: 'Pub/Sub with Wildcards',
+    difficulty: 'medium',
+    pLevel: 'p2',
+    expectedTime: '35m',
+    description: `**Scenario:** A messaging system needs to support wildcard subscriptions.
+- \`subscribe('user.*')\` should match \`publish('user.created')\` and \`publish('user.deleted')\`.
+
+**Task:** Implement \`PubSub\`.
+- \`subscribe(pattern, callback)\`
+- \`publish(topic, message)\` -> triggers all matching callbacks.`,
+    initialCode: `const subscribers = [];
+function solution(op) {
+  if (op.type === 'sub') {
+    subscribers.push(op.pattern);
+    return "ok";
+  }
+  if (op.type === 'pub') {
+    // find matching subscribers
+    return 0; // count of triggered
+  }
+}`,
+    testCases: [
+      { input: { type: 'sub', pattern: 'a.*' }, expected: "ok" }
+    ]
+  },
+
   // --- SYSTEM DESIGN CHALLENGES (MEDIUM/HARD) ---
   {
     id: 'rate-limiter',
@@ -997,6 +1088,167 @@ module.exports = {
           { input: { method: 'getFeed', args: [null, 2] }, expected: { items: [{id:100,t:100}, {id:95,t:95}], nextCursor: "..." }, validator: (res) => res.items.length === 2 && res.items[0].id === 100, mode: 'method_call' }
         ]
       }
+    ]
+  },
+
+  {
+    id: 'geo-replication',
+    title: 'Geo-Distributed Replication',
+    difficulty: 'expert',
+    pLevel: 'p3',
+    expectedTime: '80m',
+    type: 'multi-step',
+    description: '**Scenario:** We have a Global Key-Value Store. Writes go to the Master in "US-East". We need to replicate these writes to "EU-West" and "Asia-South" asynchronously. If a region goes down, we must handle failover.',
+    steps: [
+      {
+        id: 's1',
+        title: 'Replication Log',
+        fileName: 'Replicator.js',
+        description: `**Task:** Capture changes (CDC).
+Implement \`logChange(key, value, timestamp)\`.
+Store these changes in an append-only log so followers can fetch them.`,
+        initialCode: `const changeLog = [];
+module.exports = {
+  logChange(k, v, t) {
+    // push to log
+  },
+  getLogs(sinceIndex) { return changeLog.slice(sinceIndex); }
+};`,
+        testCases: [
+          { input: { method: 'logChange', args: ['k', 'v', 1] }, expected: undefined, mode: 'method_call' }
+        ]
+      },
+      {
+        id: 's2',
+        title: 'Follower Sync',
+        fileName: 'Follower.js',
+        description: `**Task:** Apply updates.
+The Follower node polls the Master's log.
+Implement \`sync()\`. It should fetch new logs from Master and update its local \`db\`. Keep track of \`lastAppliedIndex\`.`,
+        initialCode: `const Master = require('./Replicator.js');
+const db = {};
+let lastIndex = 0;
+
+module.exports = {
+  async sync() {
+    // Master.getLogs(lastIndex)
+    // apply to db
+    // update lastIndex
+    return db;
+  }
+};`,
+        testCases: [
+          { input: { method: 'sync', args: [] }, expected: {}, mode: 'method_call' }
+        ]
+      }
+    ]
+  },
+
+  {
+    id: 'bloom-filter',
+    title: 'Custom Bloom Filter',
+    difficulty: 'expert',
+    pLevel: 'p3',
+    expectedTime: '45m',
+    description: `**Scenario:** We need to check if a username is taken without hitting the DB for every keystroke. A Bloom Filter is a probabilistic structure that tells us "Definitely No" or "Maybe Yes".
+
+**Task:** Implement a Bloom Filter.
+- \`add(str)\`: Hash string K times, set bits in a bit array.
+- \`exists(str)\`: Check if all K bits are set.
+- **Constraint:** Use a simple array of booleans or integers to simulate bits.`,
+    initialCode: `class BloomFilter {
+  constructor(size = 100) {
+    this.store = new Array(size).fill(0);
+  }
+  add(str) {
+    // hash(str) -> index
+    // set store[index] = 1
+  }
+  exists(str) {
+    return false;
+  }
+}
+const bf = new BloomFilter();
+function solution(op) {
+  if (op.action === 'add') bf.add(op.val);
+  return bf.exists(op.val);
+}`,
+    testCases: [
+      { input: { action: 'add', val: 'hello' }, expected: true },
+      { input: { action: 'check', val: 'world' }, expected: false }
+    ]
+  },
+
+  {
+    id: 'lru-cache',
+    title: 'LRU Cache (LeetCode Style)',
+    difficulty: 'expert',
+    pLevel: 'p3',
+    expectedTime: '50m',
+    description: `**Scenario:** A classic interview problem. Design a Least Recently Used (LRU) cache.
+
+**Task:** Implement \`LRUCache\` class.
+- \`get(key)\`: Get value. If exists, move to front (recently used). Return -1 if not found.
+- \`put(key, value)\`: Update/Insert. If over capacity, remove the *least recently used* item.
+- **Requirement:** O(1) time complexity for both operations (Map + Doubly Linked List).`,
+    initialCode: `class LRUCache {
+  constructor(capacity) {
+    this.cap = capacity;
+    this.map = new Map();
+  }
+  get(key) {
+    return -1;
+  }
+  put(key, value) {
+  }
+}
+const lru = new LRUCache(2);
+function solution(op) {
+  if (op.type === 'put') lru.put(op.key, op.val);
+  if (op.type === 'get') return lru.get(op.key);
+}`,
+    testCases: [
+      { input: { type: 'put', key: 1, val: 1 }, expected: undefined },
+      { input: { type: 'put', key: 2, val: 2 }, expected: undefined },
+      { input: { type: 'get', key: 1 }, expected: 1 },
+      { input: { type: 'put', key: 3, val: 3 }, expected: undefined }, // evicts 2
+      { input: { type: 'get', key: 2 }, expected: -1 }
+    ]
+  },
+
+  {
+    id: 'trie-autocomplete',
+    title: 'Trie for Autocomplete',
+    difficulty: 'expert',
+    pLevel: 'p3',
+    expectedTime: '45m',
+    description: `**Scenario:** Implement the backend for a search bar autocomplete.
+
+**Task:** Build a \`Trie\` (Prefix Tree).
+- \`insert(word)\`: Add a word.
+- \`search(prefix)\`: Return all words in the Trie that start with this prefix.`,
+    initialCode: `class TrieNode {
+  constructor() {
+    this.children = {};
+    this.isEnd = false;
+  }
+}
+
+class Trie {
+  constructor() { this.root = new TrieNode(); }
+  insert(word) {}
+  search(prefix) { return []; }
+}
+
+const t = new Trie();
+function solution(op) {
+  if (op.type === 'insert') t.insert(op.word);
+  if (op.type === 'search') return t.search(op.prefix);
+}`,
+    testCases: [
+      { input: { type: 'insert', word: 'apple' }, expected: undefined },
+      { input: { type: 'insert', word: 'app' }, expected: undefined },
+      { input: { type: 'search', prefix: 'app' }, expected: ['apple', 'app'] } // Order may vary, logic needed
     ]
   }
 ];

@@ -112,6 +112,18 @@ export default function TodoApp() {
   return (
     <div>
       <h2>Todo List</h2>
+      <p>
+        <strong>Scenario:</strong> Manage a list of tasks with CRUD operations and filtering.
+        <pre>{`
+[ Input: "Buy Milk" ] -> [ Add Button ]
+       |
+       v
+[ ] Buy Milk  [Delete]
+[x] Walk Dog  [Delete]
+       ^
+  (Toggle Completion)
+        `}</pre>
+      </p>
       <Requirements>
             <li>Add items to a list.</li>
             <li>Mark items as complete (toggle).</li>
@@ -121,12 +133,7 @@ export default function TodoApp() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} />
-      </div>
-
-      <h3>Reference Implementation (Static)</h3>
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        <TodoListImplementation />
+         <CodePlayground initialCode={initialCode} solutionComponent={TodoListImplementation} />
       </div>
     </div>
   );

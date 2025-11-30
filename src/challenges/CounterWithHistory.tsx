@@ -91,6 +91,17 @@ export default function Counter() {
   return (
     <div>
       <h2>Counter with History</h2>
+      <p>
+        <strong>Scenario:</strong> A basic counter that maintains an audit trail of all actions.
+        <pre>{`
+      [Counter: 5]
+         /   |   \\
+    (+)   (-)   (Reset)
+     |     |       |
+     v     v       v
+[History Log: "Inc to 1", "Inc to 2", "Dec to 1"...]
+        `}</pre>
+      </p>
       <Requirements>
           <li>Increment button increases count by 1.</li>
           <li>Decrement button decreases count by 1.</li>
@@ -100,12 +111,7 @@ export default function Counter() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} scope={{ CounterWithHistoryImplementation }} />
-      </div>
-      
-      <h3>Reference Implementation (Static)</h3>
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        <CounterWithHistoryImplementation />
+         <CodePlayground initialCode={initialCode} scope={{ CounterWithHistoryImplementation }} solutionComponent={CounterWithHistoryImplementation} />
       </div>
     </div>
   );

@@ -1,14 +1,3 @@
-/**
- * Challenge: Simple Form Validation
- * Difficulty: Easy
- * 
- * Requirements:
- * 1. Login form with Email and Password fields.
- * 2. Validate email format on submit (or on blur).
- * 3. Validate password length (e.g., min 6 chars).
- * 4. Show error messages below fields.
- */
-
 import React, { useState } from 'react';
 import Requirements from '../components/Requirements';
 import CodePlayground from '../components/CodePlayground';
@@ -91,6 +80,19 @@ export default function LoginForm() {
   return (
     <div>
       <h2>Simple Form Validation</h2>
+      <p>
+        <strong>Scenario:</strong> Build a secure login form that provides immediate feedback.
+        <pre>{`
+[ Email Input ]   [ Password Input ]
+      |                 |
+  (onBlur/Change)   (onBlur/Change)
+      |                 |
+  v-------v         v-------v
+(Check Format)    (Check Length > 6)
+      |                 |
+[ Error Msg ]     [ Error Msg ]
+        `}</pre>
+      </p>
       <Requirements>
             <li>Login form with Email and Password fields.</li>
             <li>Validate email format on submit (or on blur).</li>
@@ -100,14 +102,8 @@ export default function LoginForm() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} />
-      </div>
-
-      <h3>Reference Implementation (Static)</h3>
-      <div style={{ border: '1px dashed #666', padding: '2rem', borderRadius: '8px', textAlign: 'center' }}>
-        <SimpleFormValidationImplementation />
+         <CodePlayground initialCode={initialCode} solutionComponent={SimpleFormValidationImplementation} />
       </div>
     </div>
   );
 }
-
