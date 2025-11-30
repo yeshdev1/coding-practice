@@ -5,6 +5,7 @@ export const backendChallenges = [
     title: 'Data Normalization',
     difficulty: 'easy',
     pLevel: 'p0',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** Our legacy SQL database returns flat rows where User data and Address data are joined (e.g., \`user_id\`, \`user_name\`, \`addr_street\`). The frontend React application, however, expects a clean, nested JSON object for each user.
 
@@ -16,6 +17,22 @@ export const backendChallenges = [
         input: [{ id: 1, name: 'Alice', addr_street: '123 Main', addr_city: 'City' }], 
         expected: [{ id: 1, name: 'Alice', address: { street: '123 Main', city: 'City' } }] 
       }
+    ],
+    concepts: [
+        {
+            title: "Database Normalization",
+            description: "The process of organizing data in a database to reduce redundancy. While SQL often joins data into flat rows for queries, applications typically prefer nested objects (trees) for representation.",
+            links: [
+                { text: "What is Database Normalization?", url: "https://learn.microsoft.com/en-us/office/troubleshoot/access/database-normalization-description" }
+            ]
+        },
+        {
+            title: "Data Transformation (ETL)",
+            description: "Extract, Transform, Load. This challenge mimics the 'Transform' phase where raw data is reshaped into a target schema.",
+            links: [
+                { text: "Data Transformation Explained", url: "https://www.ibm.com/topics/etl" }
+            ]
+        }
     ]
   },
   {
@@ -23,162 +40,345 @@ export const backendChallenges = [
     title: 'Pagination Helper',
     difficulty: 'easy',
     pLevel: 'p0',
+    category: 'core',
     expectedTime: '15m',
     description: `**Scenario:** The 'All Products' API endpoint is crashing browsers because it tries to return 10,000 items in a single request. We need to implement server-side pagination immediately.
 
 **Task:** Create a reusable pagination helper function. It should accept an array of items, a page number, and a page size. It must return the specific slice of data for that page, along with metadata (total items, total pages, current page) so the frontend can render the pagination controls.`,
     initialCode: `function solution({ items, page, pageSize }) { return { data: [], meta: {} }; }`,
-    testCases: [{ input: { items: [1,2,3], page: 1, pageSize: 2 }, expected: { data: [1,2], meta: { total: 3, totalPages: 2, currentPage: 1 } } }]
+    testCases: [{ input: { items: [1,2,3], page: 1, pageSize: 2 }, expected: { data: [1,2], meta: { total: 3, totalPages: 2, currentPage: 1 } } }],
+    concepts: [
+        {
+            title: "Offset-Based Pagination",
+            description: "The simplest form of pagination where you skip N items and take M items. It's easy to implement but can be slow for large offsets (O(N)).",
+            links: [
+                { text: "Pagination Strategies", url: "https://www.citusdata.com/blog/2016/03/30/five-ways-to-paginate/" }
+            ]
+        },
+        {
+            title: "API Design Patterns",
+            description: "Good APIs always return metadata (like total count) so clients can build UI navigation.",
+            links: [
+                { text: "REST API Pagination", url: "https://restfulapi.net/pagination/" }
+            ]
+        }
+    ]
   },
   {
     id: 'file-system',
     title: 'Virtual File System',
     difficulty: 'easy',
     pLevel: 'p0',
+    category: 'core',
     expectedTime: '25m',
     description: `**Scenario:** We are building a web-based IDE (like this one!) and need a lightweight in-memory file system to store the user's code before it's saved to the cloud.
 
 **Task:** Implement a simple class or function that handles a stream of file operations: \`WRITE\` (create/update a file) and \`READ\` (retrieve content). The system should start empty and return the result of read operations.`,
     initialCode: `function solution(commands) { return []; }`,
-    testCases: [{ input: [["WRITE", "a", "b"], ["READ", "a"]], expected: ["b"] }]
+    testCases: [{ input: [["WRITE", "a", "b"], ["READ", "a"]], expected: ["b"] }],
+    concepts: [
+        {
+            title: "Key-Value Stores",
+            description: "At its core, a file system can be modeled as a key-value store (filename -> content). This is how systems like Redis work.",
+            links: []
+        },
+        {
+            title: "Command Pattern",
+            description: "Encapsulating requests as objects (e.g., ['WRITE', 'a', 'b']). This allows for queuing, logging, and undoable operations.",
+            links: [
+                { text: "Command Pattern", url: "https://refactoring.guru/design-patterns/command" }
+            ]
+        }
+    ]
   },
   {
     id: 'log-parser',
     title: 'Log Aggregator',
     difficulty: 'easy',
     pLevel: 'p0',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** The SRE team needs a quick dashboard to see how many errors are occurring in production. They are sending us a raw stream of log messages.
 
 **Task:** Parse a multiline string of log entries (e.g., "INFO User logged in", "ERROR DB Connection failed") and return an object counting the occurrences of each log level (INFO, WARN, ERROR).`,
     initialCode: `function solution(logs) { return {}; }`,
-    testCases: [{ input: "INFO A\nERROR B", expected: { INFO: 1, ERROR: 1 } }]
+    testCases: [{ input: "INFO A\nERROR B", expected: { INFO: 1, ERROR: 1 } }],
+    concepts: [
+        {
+            title: "String Parsing & Regex",
+            description: "Extracting structured data from unstructured text. Essential for logging, scraping, and data processing.",
+            links: []
+        },
+        {
+            title: "Aggregations",
+            description: "Grouping data to provide insights (Count, Sum, Average). This is similar to SQL's `GROUP BY` clause.",
+            links: []
+        }
+    ]
   },
   {
     id: 'cache-ttl',
     title: 'In-Memory Cache with TTL',
     difficulty: 'easy',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** To reduce load on our primary database, we need to cache user session data. However, sessions must expire automatically for security.
 
 **Task:** Implement a key-value cache store that supports \`SET\` (with a Time-To-Live in seconds), \`GET\` (return null if expired), and a simulated \`WAIT\` command to advance time during testing.`,
     initialCode: `function solution(cmds) { return []; }`,
-    testCases: [{ input: [["SET","A",1,5],["GET","A"]], expected: [null, 1] }]
+    testCases: [{ input: [["SET","A",1,5],["GET","A"]], expected: [null, 1] }],
+    concepts: [
+        {
+            title: "Time-To-Live (TTL)",
+            description: "A mechanism to limit the lifespan of data in a computer or network. Used in caching, DNS, and packets.",
+            links: [
+                { text: "What is TTL?", url: "https://www.cloudflare.com/learning/cdn/what-is-time-to-live/" }
+            ]
+        },
+        {
+            title: "Lazy Expiration",
+            description: "Instead of actively deleting expired items (which is expensive), check expiration only when the item is accessed.",
+            links: []
+        }
+    ]
   },
   {
     id: 'event-emitter',
     title: 'Simple Event Emitter',
     difficulty: 'easy',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '25m',
     description: `**Scenario:** We are decoupling our monolithic application. Different modules need to communicate without importing each other directly.
 
 **Task:** Build a basic Event Bus. It should support subscribing to events (\`ON\`), triggering them (\`EMIT\`), and unsubscribing (\`OFF\`). When an event is emitted, all active callbacks for that event name should be invoked with the data.`,
     initialCode: `function solution(cmds) { return []; }`,
-    testCases: [{ input: [["ON","a","1"],["EMIT","a","b"]], expected: ["1: b"] }]
+    testCases: [{ input: [["ON","a","1"],["EMIT","a","b"]], expected: ["1: b"] }],
+    concepts: [
+        {
+            title: "Observer Pattern",
+            description: "A design pattern where an object (Subject) maintains a list of dependents (Observers) and notifies them of state changes.",
+            links: [
+                { text: "Observer Pattern", url: "https://refactoring.guru/design-patterns/observer" }
+            ]
+        },
+        {
+            title: "Pub/Sub Messaging",
+            description: "Decoupling senders (publishers) from receivers (subscribers) to improve scalability and maintainability.",
+            links: []
+        }
+    ]
   },
   {
     id: 'deep-merge',
     title: 'Config Deep Merger',
     difficulty: 'easy',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** Our service has a \`default-config.json\` and customers provide a \`user-overrides.json\`. We need to combine them so that user settings override defaults, but without losing nested default settings that weren't overridden.
 
 **Task:** Implement a deep merge function that recursively merges two objects.`,
     initialCode: `function solution(args) { return {}; }`,
-    testCases: [{ input: [{a:1}, {b:2}], expected: {a:1, b:2} }]
+    testCases: [{ input: [{a:1}, {b:2}], expected: {a:1, b:2} }],
+    concepts: [
+        {
+            title: "Recursion",
+            description: "Solving a problem by breaking it down into smaller instances of the same problem. Essential for tree-like structures (JSON, DOM, File Systems).",
+            links: []
+        },
+        {
+            title: "Immutability",
+            description: "In React and Redux, merging objects usually requires creating new references rather than mutating inputs.",
+            links: []
+        }
+    ]
   },
   {
     id: 'url-parser',
     title: 'URL Query Parser',
     difficulty: 'easy',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '15m',
     description: `**Scenario:** Marketing needs to track campaign clicks. The incoming HTTP requests contain UTM parameters in the query string (e.g., \`?source=google&campaign=spring_sale\`).
 
 **Task:** Write a function that parses a full URL string and returns a key-value object of all query parameters.`,
     initialCode: `function solution(url) { return {}; }`,
-    testCases: [{ input: "http://a.com?b=1", expected: {b:"1"} }]
+    testCases: [{ input: "http://a.com?b=1", expected: {b:"1"} }],
+    concepts: [
+        {
+            title: "URI Standard (RFC 3986)",
+            description: "Understanding the anatomy of a URL: Scheme, Authority, Path, Query, and Fragment.",
+            links: [
+                { text: "Anatomy of a URL", url: "https://developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/What_is_a_URL" }
+            ]
+        },
+        {
+            title: "URL Encoding",
+            description: "Handling special characters in URLs (e.g., spaces become %20).",
+            links: []
+        }
+    ]
   },
   {
     id: 'middleware-chain',
     title: 'Middleware Chain',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '25m',
     description: `**Scenario:** We are building a micro-framework similar to Express.js. We need a way to run a request through a sequence of middleware functions (authentication, logging, body parsing) before handling it.
 
 **Task:** Implement a function that takes a list of middleware tasks and executes them in order. Each task receives the data and modifies it for the next one.`,
     initialCode: `async function solution(mw) { return 0; }`,
-    testCases: [{ input: ["ADD 1"], expected: 1 }]
+    testCases: [{ input: ["ADD 1"], expected: 1 }],
+    concepts: [
+        {
+            title: "Chain of Responsibility",
+            description: "A behavioral design pattern that lets you pass requests along a chain of handlers.",
+            links: [
+                { text: "Chain of Responsibility", url: "https://refactoring.guru/design-patterns/chain-of-responsibility" }
+            ]
+        },
+        {
+            title: "Middleware Pattern",
+            description: "Software glue that sits between the OS and apps, or between different layers of an app (e.g., Express/Redux middleware).",
+            links: []
+        }
+    ]
   },
   {
     id: 'dedup-transactions',
     title: 'Deduplicate Transactions',
     difficulty: 'easy',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** Our payment provider sometimes sends the same webhook event twice (at-least-once delivery). If we process it twice, we charge the customer twice.
 
 **Task:** Given a stream of transaction objects, filter out duplicates. If a transaction ID appears multiple times, keep only the one with the latest timestamp.`,
     initialCode: `function solution(txs) { return []; }`,
-    testCases: [{ input: [{id:1, t:1}], expected: [{id:1, t:1}] }]
+    testCases: [{ input: [{id:1, t:1}], expected: [{id:1, t:1}] }],
+    concepts: [
+        {
+            title: "Idempotency",
+            description: "The property that an operation can be applied multiple times without changing the result beyond the initial application.",
+            links: [
+                { text: "What is Idempotency?", url: "https://stripe.com/blog/idempotency" }
+            ]
+        },
+        {
+            title: "Data Cleaning",
+            description: "Preprocessing data to remove noise, duplicates, and errors before analysis or storage.",
+            links: []
+        }
+    ]
   },
   {
     id: 'inventory-update',
     title: 'Inventory Update',
     difficulty: 'easy',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** A fresh shipment of products has arrived at the warehouse. We need to update our current inventory counts with the new delivery manifest.
 
 **Task:** Write a function that takes the current inventory object and a delivery object (both mapping ItemSKU -> Count) and returns the new total inventory.`,
     initialCode: `function solution({current, delivery}) { return {}; }`,
-    testCases: [{ input: {current:{a:1}, delivery:{a:1}}, expected: {a:2} }]
+    testCases: [{ input: {current:{a:1}, delivery:{a:1}}, expected: {a:2} }],
+    concepts: [
+        {
+            title: "Hash Maps / Dictionaries",
+            description: "Using Key-Value structures for O(1) lookups and aggregations.",
+            links: []
+        }
+    ]
   },
   {
     id: 'find-missing',
     title: 'Find Missing ID',
     difficulty: 'easy',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '15m',
     description: `**Scenario:** We process orders sequentially. An alert fired saying that an Order ID is missing from the sequence, indicating a potential data loss or failed transaction.
 
 **Task:** Given a list of sorted Order IDs (integers), find the one missing number in the sequence so we can investigate.`,
     initialCode: `function solution(ids) { return 0; }`,
-    testCases: [{ input: [1,3], expected: 2 }]
+    testCases: [{ input: [1,3], expected: 2 }],
+    concepts: [
+        {
+            title: "Linear vs Binary Search",
+            description: "Finding an item in a sorted list can be done in O(log n) instead of O(n).",
+            links: []
+        },
+        {
+            title: "Arithmetic Series",
+            description: "Using the formula n*(n+1)/2 to find missing numbers by comparing expected sum vs actual sum.",
+            links: []
+        }
+    ]
   },
   {
     id: 'sql-generator',
     title: 'Simple SQL Generator',
     difficulty: 'easy',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '20m',
     description: `**Scenario:** We are building a lightweight internal ORM (Object-Relational Mapper). We need a utility to generate raw SQL queries from a JavaScript configuration object.
 
 **Task:** Implement a function that takes a table name and an ID, and returns a valid \`SELECT\` SQL string.`,
     initialCode: `function solution({table, id}) { return ""; }`,
-    testCases: [{ input: {table:"a", id:1}, expected: "SELECT * FROM a WHERE id = 1" }]
+    testCases: [{ input: {table:"a", id:1}, expected: "SELECT * FROM a WHERE id = 1" }],
+    concepts: [
+        {
+            title: "Object-Relational Mapping (ORM)",
+            description: "A technique for converting data between incompatible type systems (Objects vs Relational Tables).",
+            links: []
+        },
+        {
+            title: "SQL Injection Prevention",
+            description: "Why we must be careful when generating SQL strings (though this challenge is simple).",
+            links: [
+                { text: "SQL Injection", url: "https://owasp.org/www-community/attacks/SQL_Injection" }
+            ]
+        }
+    ]
   },
   {
     id: 'obj-flattener',
     title: 'Object Flattener',
     difficulty: 'medium',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '25m',
     description: `**Scenario:** The Data Science team asks for a CSV export of our user data. However, our data is stored in MongoDB as complex nested objects. CSVs require flat columns.
 
 **Task:** Write a function that flattens a nested object into a single-level object using dot notation for keys (e.g., \`{ user: { name: 'A' } }\` becomes \`{ "user.name": "A" }\`).`,
     initialCode: `function solution(obj) { return {}; }`,
-    testCases: [{ input: {a:{b:1}}, expected: {"a.b":1} }]
+    testCases: [{ input: {a:{b:1}}, expected: {"a.b":1} }],
+    concepts: [
+        {
+            title: "Tree Traversal (DFS)",
+            description: "Visiting every node in a hierarchical structure (like a JSON object) using Depth-First Search.",
+            links: []
+        },
+        {
+            title: "Serialization",
+            description: "Converting a data structure into a format that can be stored or transmitted (like flattening for CSV).",
+            links: []
+        }
+    ]
   },
   {
     id: 'cursor-pagination',
     title: 'Infinite Scroll API (Cursor Pagination)',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '30m',
     description: `**Scenario:** The "Social Feed" endpoint is getting slower as users scroll deeper. We are currently using Offset-based pagination (\`SKIP 10000 LIMIT 10\`), which is O(N). We need to switch to Cursor-based pagination for O(1) performance.
 
@@ -198,13 +398,28 @@ function solution({ cursor, limit }) {
   const start = cursor ? db.findIndex(i => i.id === cursor) + 1 : 0;
   return { data: [], nextCursor: null };
 }`,
-    testCases: [{ input: { cursor: 2, limit: 2 }, expected: { data: [{id:3, content:'C'}, {id:4, content:'D'}], nextCursor: 4 } }]
+    testCases: [{ input: { cursor: 2, limit: 2 }, expected: { data: [{id:3, content:'C'}, {id:4, content:'D'}], nextCursor: 4 } }],
+    concepts: [
+        {
+            title: "Cursor vs Offset Pagination",
+            description: "Offset pagination (`LIMIT 10 OFFSET 10000`) gets slower as offset increases because the DB must scan and drop rows. Cursor pagination (`WHERE id > last_id LIMIT 10`) uses an index, making it O(1) regardless of depth.",
+            links: [
+                { text: "Cursor vs Offset Pagination", url: "https://slack.engineering/evolving-api-pagination-at-slack/" }
+            ]
+        },
+        {
+            title: "Keyset Pagination",
+            description: "Using a unique, sortable column (or set of columns) as a pointer to the next page.",
+            links: []
+        }
+    ]
   },
   {
     id: 'rbac-middleware',
     title: 'Role-Based Access Control',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'core',
     expectedTime: '25m',
     description: `**Scenario:** We have a mix of "Admins", "Editors", and "Viewers". We need a central middleware to enforce permissions so we don't have \`if (user.role === 'admin')\` scattered everywhere.
 
@@ -217,13 +432,28 @@ function solution({ cursor, limit }) {
     initialCode: `function solution({ user, resource, action }) {
   return false;
 }`,
-    testCases: [{ input: { user: { role: 'viewer' }, resource: 'articles', action: 'write' }, expected: false }]
+    testCases: [{ input: { user: { role: 'viewer' }, resource: 'articles', action: 'write' }, expected: false }],
+    concepts: [
+        {
+            title: "Role-Based Access Control (RBAC)",
+            description: "Restricting system access to authorized users based on their roles. It simplifies permission management compared to assigning permissions to users individually.",
+            links: [
+                { text: "RBAC Explained", url: "https://auth0.com/docs/manage-users/access-control/rbac" }
+            ]
+        },
+        {
+            title: "Authorization vs Authentication",
+            description: "Authentication is 'Who are you?'. Authorization is 'What are you allowed to do?'.",
+            links: []
+        }
+    ]
   },
   {
     id: 'idempotency-key',
     title: 'Idempotency Mechanism',
     difficulty: 'medium',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '30m',
     description: `**Scenario:** If a client's network fails after sending a payment request, they retry. Without Idempotency, we might charge them twice.
 
@@ -239,6 +469,20 @@ function solution(req) {
 }`,
     testCases: [
       { input: { idempotencyKey: 'k1', data: 'charge' }, expected: "processed" }
+    ],
+    concepts: [
+        {
+            title: "Idempotency in Distributed Systems",
+            description: "Ensuring that retrying a request (due to network failure) does not cause side effects like double-billing.",
+            links: [
+                { text: "Idempotency Keys", url: "https://stripe.com/blog/idempotency" }
+            ]
+        },
+        {
+            title: "Atomic Check-and-Set",
+            description: "Race conditions can occur if two identical requests arrive simultaneously. A real implementation needs atomic locks (like `SETNX` in Redis).",
+            links: []
+        }
     ]
   },
 
@@ -247,6 +491,7 @@ function solution(req) {
     title: 'Leaky Bucket Rate Limiter',
     difficulty: 'medium',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '35m',
     description: `**Scenario:** We need to smooth out bursty traffic to our API. The "Leaky Bucket" algorithm allows requests to queue up but processes them at a constant rate.
 
@@ -281,6 +526,20 @@ function solution(action) {
     testCases: [
       { input: 'add', expected: true },
       { input: 'tick', expected: 0 } // Expect 0 initially if empty, depends on implementation logic flow
+    ],
+    concepts: [
+        {
+            title: "Traffic Shaping",
+            description: "Techniques to control the volume and rate of traffic sent to a network interface. Leaky Bucket converts bursty traffic into a smooth, constant flow.",
+            links: [
+                { text: "Leaky Bucket Algorithm", url: "https://en.wikipedia.org/wiki/Leaky_bucket" }
+            ]
+        },
+        {
+            title: "Queueing Theory",
+            description: "Understanding how queues fill up and empty is vital for system stability.",
+            links: []
+        }
     ]
   },
 
@@ -289,6 +548,7 @@ function solution(action) {
     title: 'Dependency Task Scheduler',
     difficulty: 'medium',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '40m',
     description: `**Scenario:** We have a build system where tasks depend on others (e.g., 'build' depends on 'lint' and 'test'). We need to determine the execution order.
 
@@ -302,6 +562,20 @@ function solution(action) {
 }`,
     testCases: [
       { input: { 'a': ['b'], 'b': [] }, expected: ['b', 'a'] }
+    ],
+    concepts: [
+        {
+            title: "Topological Sort",
+            description: "A linear ordering of vertices in a directed graph such that for every directed edge from u to v, u comes before v. Used in build systems (Webpack/Make) and package managers.",
+            links: [
+                { text: "Topological Sorting", url: "https://en.wikipedia.org/wiki/Topological_sorting" }
+            ]
+        },
+        {
+            title: "Directed Acyclic Graph (DAG)",
+            description: "A graph with no directed cycles. Dependencies usually form a DAG.",
+            links: []
+        }
     ]
   },
 
@@ -310,6 +584,7 @@ function solution(action) {
     title: 'Pub/Sub with Wildcards',
     difficulty: 'medium',
     pLevel: 'p2',
+    category: 'core',
     expectedTime: '35m',
     description: `**Scenario:** A messaging system needs to support wildcard subscriptions.
 - \`subscribe('user.*')\` should match \`publish('user.created')\` and \`publish('user.deleted')\`.
@@ -330,6 +605,20 @@ function solution(op) {
 }`,
     testCases: [
       { input: { type: 'sub', pattern: 'a.*' }, expected: "ok" }
+    ],
+    concepts: [
+        {
+            title: "Pattern Matching (Trie/Regex)",
+            description: "Efficiently matching strings against patterns. For high performance, a Trie or specialized tree is preferred over iterating all Regexes.",
+            links: []
+        },
+        {
+            title: "Message Brokers (RabbitMQ/Kafka)",
+            description: "Real-world systems use 'Topic Exchanges' to route messages based on wildcards.",
+            links: [
+                { text: "RabbitMQ Topic Exchange", url: "https://www.rabbitmq.com/tutorials/tutorial-five-python" }
+            ]
+        }
     ]
   },
 
@@ -339,66 +628,142 @@ function solution(op) {
     title: 'API Rate Limiter',
     difficulty: 'easy',
     pLevel: 'p0',
+    category: 'systems',
     expectedTime: '20m',
     description: `**Scenario:** A malicious bot is spamming our public login endpoint, trying to brute-force passwords. This is degrading performance for legitimate users.
 
 **Task:** Implement a Rate Limiter function \`isAllowed(userId)\`. It should allow a maximum of 5 requests per minute per user. If a user exceeds this, return \`false\` (block them).`,
     initialCode: `async function solution(id) { return true; }`,
-    testCases: [{ input: "u1", expected: true }]
+    testCases: [{ input: "u1", expected: true }],
+    concepts: [
+        {
+            title: "Rate Limiting Strategies",
+            description: "Common algorithms include Token Bucket, Leaky Bucket, Fixed Window Counter, and Sliding Window Log.",
+            links: [
+                { text: "Rate Limiting Algorithms", url: "https://cloud.google.com/architecture/rate-limiting-strategies-techniques" }
+            ]
+        },
+        {
+            title: "DoS Protection",
+            description: "Denial of Service. Rate limiting is the first line of defense against availability attacks.",
+            links: []
+        }
+    ]
   },
   {
     id: 'load-balancer-simulation',
     title: 'Load Balancer Strategy',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'systems',
     expectedTime: '30m',
     description: `**Scenario:** We have 3 backend servers. Currently, we send all traffic to Server 1 until it crashes. We need a smarter distribution strategy.
 
 **Task:** Implement a "Weighted Round Robin" load balancer. It should distribute incoming requests across the node pool based on a simple rotation, or optionally based on server capacity (weights).`,
     initialCode: `function solution(n) { return []; }`,
-    testCases: [{ input: 4, expected: ["node-1", "node-1", "node-2", "node-3"] }]
+    testCases: [{ input: 4, expected: ["node-1", "node-1", "node-2", "node-3"] }],
+    concepts: [
+        {
+            title: "Load Balancing Algorithms",
+            description: "Round Robin, Least Connections, IP Hash. Weighted Round Robin allows sending more traffic to powerful servers.",
+            links: [
+                { text: "Load Balancing Techniques", url: "https://www.nginx.com/resources/glossary/load-balancing/" }
+            ]
+        },
+        {
+            title: "Horizontal Scaling",
+            description: "Adding more machines to the pool (instead of making one machine stronger) requires a load balancer to distribute the work.",
+            links: []
+        }
+    ]
   },
   {
     id: 'job-queue-processor',
     title: 'Async Job Queue Processor',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'systems',
     expectedTime: '35m',
     description: `**Scenario:** Sending emails is slow. If we send them during the user's HTTP request, the page hangs. We need to offload this to a background worker.
 
 **Task:** Implement a worker that continuously polls a job queue. When a job appears (e.g., "send_email"), process it asynchronously. Ensure that if processing fails, the job is not lost (simulating retry logic is a plus).`,
     initialCode: `async function solution(cmd) { return 0; }`,
-    testCases: [{ input: "start", validator: () => true }]
+    testCases: [{ input: "start", validator: () => true }],
+    concepts: [
+        {
+            title: "Asynchronous Processing",
+            description: "Decoupling time-consuming tasks from the request-response cycle to improve user experience.",
+            links: []
+        },
+        {
+            title: "Message Durability",
+            description: "Ensuring jobs persist even if the worker crashes. Usually involves 'acknowledgment' (ACK) mechanisms.",
+            links: [
+                { text: "Task Queues", url: "https://redis.io/docs/data-types/streams-tutorial/" }
+            ]
+        }
+    ]
   },
   {
     id: 'caching-strategy',
     title: 'Write-Through Cache',
     difficulty: 'medium',
     pLevel: 'p1',
+    category: 'systems',
     expectedTime: '30m',
     description: `**Scenario:** Our User Profile service is read-heavy (90% reads). We want to add a caching layer. However, we must ensure that when a user updates their profile, the cache doesn't serve stale data.
 
 **Task:** Implement a "Write-Through" strategy: When writing data, update *both* the DB and the Cache. When reading, check Cache first; if missing (cache miss), load from DB and populate Cache ("Read-Aside").`,
     initialCode: `async function solution(op) { return null; }`,
-    testCases: [{ input: {action:'read', id:1}, expected: null }]
+    testCases: [{ input: {action:'read', id:1}, expected: null }],
+    concepts: [
+        {
+            title: "Caching Patterns",
+            description: "Write-Through (slow write, fast read, strong consistency), Write-Back (fast write, eventual consistency), Cache-Aside (lazy loading).",
+            links: [
+                { text: "Caching Strategies", url: "https://aws.amazon.com/caching/best-practices/" }
+            ]
+        },
+        {
+            title: "Cache Consistency",
+            description: "The hardest problem in CS. Keeping the cache in sync with the source of truth.",
+            links: []
+        }
+    ]
   },
   {
     id: 'circuit-breaker',
     title: 'Circuit Breaker Pattern',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '45m',
     description: `**Scenario:** Our application relies on a third-party "Payment Gateway" API. Sometimes this API goes down or becomes extremely slow. When this happens, our threads pile up waiting for it, eventually crashing *our* server (Cascading Failure).
 
 **Task:** Implement a Circuit Breaker. It should wrap the API calls. If failures exceed a threshold, the breaker "trips" (OPEN state) and immediately fails subsequent calls without hitting the external API, allowing the system to recover. After a timeout, it tries again (HALF-OPEN).`,
     initialCode: `function solution(calls) { return []; }`,
-    testCases: [{ input: [false], expected: ["fail"] }]
+    testCases: [{ input: [false], expected: ["fail"] }],
+    concepts: [
+        {
+            title: "Circuit Breaker Pattern",
+            description: "Prevents an application from repeatedly trying to execute an operation that's likely to fail. States: Closed (Normal), Open (Failing), Half-Open (Testing).",
+            links: [
+                { text: "Circuit Breaker", url: "https://martinfowler.com/bliki/CircuitBreaker.html" }
+            ]
+        },
+        {
+            title: "Cascading Failures",
+            description: "When a failure in one component triggers failures in subsequent components.",
+            links: []
+        }
+    ]
   },
   {
     id: 'distributed-lock',
     title: 'Distributed Lock Simulation',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '40m',
     description: `**Scenario:** We have two background workers running on different servers. Both wake up at midnight to generate the "Daily Report". If they both run, we charge the client twice. We need to ensure *mutually exclusive* access.
 
@@ -428,6 +793,20 @@ function solution(op) {
         input: [{type:'acquire', res:'A', ttl:10}, {type:'acquire', res:'A', ttl:10}],
         expected: [true, false]
       }
+    ],
+    concepts: [
+        {
+            title: "Mutual Exclusion (Mutex)",
+            description: "Ensuring that only one process can access a critical section at a time.",
+            links: []
+        },
+        {
+            title: "Distributed Locks with Redis (Redlock)",
+            description: "Using `SET resource_name my_random_value NX PX 30000` to acquire a lock atomically.",
+            links: [
+                { text: "Distributed Locks with Redis", url: "https://redis.io/docs/manual/patterns/distributed-locks/" }
+            ]
+        }
     ]
   },
 
@@ -438,6 +817,7 @@ function solution(op) {
     title: 'Distributed Order Saga',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '60m',
     type: 'multi-step',
     description: '**Scenario:** In a microservices architecture, an Order requires actions in two separate services: Inventory (reserve stock) and Payment (charge card). If Payment fails, we must "undo" the Inventory reservation. We cannot use a single database transaction.',
@@ -490,6 +870,20 @@ module.exports = {
           { input: { method: 'createOrder', args: ['u1', 'item_1', 1, 50] }, expected: 'success', mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Saga Pattern",
+            description: "A sequence of local transactions. Each local transaction updates the database and publishes a message or event to trigger the next local transaction in the saga.",
+            links: [
+                { text: "Saga Pattern", url: "https://microservices.io/patterns/data/saga.html" }
+            ]
+        },
+        {
+            title: "Compensating Transactions",
+            description: "Since we can't rollback a committed database transaction in another service, we must execute a new transaction that 'undoes' the changes (e.g., Refund implies undo Charge).",
+            links: []
+        }
     ]
   },
 
@@ -498,6 +892,7 @@ module.exports = {
     title: 'Log Aggregation Pipeline',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '50m',
     type: 'multi-step',
     description: '**Scenario:** In high-scale production, we cannot read logs from files. We need a centralized pipeline where logs are collected, buffered in a queue, parsed for meaning, and then checked for critical alerts.',
@@ -530,6 +925,18 @@ Implement a pipeline runner that ingests a log, triggers the parser, and checks 
 module.exports = { async runPipeline() { return "OK"; } };`,
         testCases: [{ input: { method: 'runPipeline', args: [] }, expected: "OK", mode: 'method_call' }]
       }
+    ],
+    concepts: [
+        {
+            title: "Event-Driven Architecture",
+            description: "Using events (logs) to trigger actions (alerts) asynchronously.",
+            links: []
+        },
+        {
+            title: "Buffering (Queues)",
+            description: "Decoupling producers (Log Collector) from consumers (Log Parser) using a queue handles bursty traffic and prevents data loss.",
+            links: []
+        }
     ]
   },
 
@@ -538,6 +945,7 @@ module.exports = { async runPipeline() { return "OK"; } };`,
     title: 'Sharded Database Proxy',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '55m',
     type: 'multi-step',
     description: '**Scenario:** Our User table has hit 1 billion rows and no longer fits on a single database server. We need to shard the data across multiple nodes based on User ID.',
@@ -570,6 +978,20 @@ The app calls \`writeUser(userId, data)\`. The proxy must calculate the shard an
 module.exports = { async writeUser(u,d) { return ""; } };`,
         testCases: [{ input: { method: 'writeUser', args: ['a','d'] }, expected: "Saved to shard 1", mode: 'method_call' }]
       }
+    ],
+    concepts: [
+        {
+            title: "Database Sharding",
+            description: "Partitioning a large dataset horizontally across multiple databases.",
+            links: [
+                { text: "Sharding Explained", url: "https://www.digitalocean.com/community/tutorials/understanding-database-sharding" }
+            ]
+        },
+        {
+            title: "Proxy Pattern",
+            description: "A server that sits between clients and other servers. Here, it acts as a 'Smart Client' that knows how to route data.",
+            links: []
+        }
     ]
   },
 
@@ -578,6 +1000,7 @@ module.exports = { async writeUser(u,d) { return ""; } };`,
     title: 'Galactic Ride Dispatcher',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '70m',
     type: 'multi-step',
     description: '**Scenario:** You are the Lead Engineer at "NebulaCab". We need a new dispatch system for our fleet. The system needs to track drivers in real-time, calculate surge pricing based on supply/demand, and match riders to the nearest driver.',
@@ -645,6 +1068,20 @@ module.exports = {
           { input: { method: 'requestRide', args: ['r1', 1, 1] }, expected: { driverId: 'd1', priceMultiplier: 2.0 }, mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Geospatial Indexing",
+            description: "Efficiently querying location data. While this challenge uses a simple loop, real systems use Quadtrees or Geohashing.",
+            links: [
+                { text: "Geohashing", url: "https://en.wikipedia.org/wiki/Geohash" }
+            ]
+        },
+        {
+            title: "Dynamic Pricing (Supply & Demand)",
+            description: "Algorithmic pricing based on real-time market conditions.",
+            links: []
+        }
     ]
   },
 
@@ -653,6 +1090,7 @@ module.exports = {
     title: 'Collaborative Code Editor',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '60m',
     type: 'multi-step',
     description: '**Scenario:** We are building a competitor to Google Docs/VS Code Live Share. Multiple users edit the same document simultaneously. Without concurrency control, user edits will overwrite each other.',
@@ -721,6 +1159,20 @@ module.exports = {
            { input: { method: 'onMessage', args: [{pos:0, char:'a'}] }, expected: "za", mode: 'method_call' } 
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Operational Transformation (OT)",
+            description: "The standard algorithm for resolving conflicts in real-time collaborative editing (Google Docs).",
+            links: [
+                { text: "Understanding OT", url: "https://en.wikipedia.org/wiki/Operational_transformation" }
+            ]
+        },
+        {
+            title: "Conflict-Free Replicated Data Types (CRDT)",
+            description: "An alternative to OT that guarantees consistency without a central server, used in more modern collaborative apps.",
+            links: []
+        }
     ]
   },
 
@@ -729,6 +1181,7 @@ module.exports = {
     title: 'Crypto Exchange Ledger',
     difficulty: 'hard',
     pLevel: 'p2',
+    category: 'systems',
     expectedTime: '65m',
     type: 'multi-step',
     description: '**Scenario:** You are building the core ledger for a high-frequency crypto exchange. In this domain, floating-point math errors or unbalanced transactions are catastrophic. We need a Double-Entry Bookkeeping system.',
@@ -790,6 +1243,20 @@ module.exports = {
           { input: { method: 'processTx', args: ['A','B', 10] }, expected: "success", mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Double-Entry Bookkeeping",
+            description: "The accounting standard where every entry to an account requires a corresponding and opposite entry to a different account. Sum must always be zero.",
+            links: [
+                { text: "Double-Entry Accounting", url: "https://en.wikipedia.org/wiki/Double-entry_bookkeeping" }
+            ]
+        },
+        {
+            title: "ACID Transactions",
+            description: "Atomicity, Consistency, Isolation, Durability. Essential for financial data integrity.",
+            links: []
+        }
     ]
   },
 
@@ -798,6 +1265,7 @@ module.exports = {
     title: 'High-Throughput Sharded Counter',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'systems',
     expectedTime: '75m',
     type: 'multi-step',
     description: '**Scenario:** A viral video platform needs a "Like" button. A popular video can receive 100,000 likes per second. A single database row cannot handle this write contention (locking). We need to shard the counter.',
@@ -860,6 +1328,18 @@ Use \`system.db.scan(prefix)\` to find all shard keys for the counter and sum th
           { input: { method: 'getTotal', args: ['video_final'] }, expected: 0, mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Write Contention",
+            description: "When multiple processes try to update the same database row simultaneously, causing locking and performance degradation.",
+            links: []
+        },
+        {
+            title: "Scatter-Gather Pattern",
+            description: "Broadcasting a request to multiple nodes (Scatter) and aggregating the results (Gather).",
+            links: []
+        }
     ]
   },
 
@@ -868,6 +1348,7 @@ Use \`system.db.scan(prefix)\` to find all shard keys for the counter and sum th
     title: 'Consistent Hashing Ring',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'systems',
     expectedTime: '80m',
     type: 'multi-step',
     description: '**Scenario:** We are building a distributed key-value store (like DynamoDB). When we add a new server node, we don\'t want to reshuffle ALL data keys. We need a Consistent Hashing strategy to minimize data movement.',
@@ -944,6 +1425,20 @@ module.exports = {
           { input: { method: 'addPhysicalNode', args: ['B', 3] }, expected: undefined, mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Consistent Hashing",
+            description: "A distributed hashing scheme that operates independently of the number of servers or objects in a distributed hash table. It reduces remapping when scaling.",
+            links: [
+                { text: "Consistent Hashing Guide", url: "https://www.toptal.com/big-data/consistent-hashing" }
+            ]
+        },
+        {
+            title: "Data Partitioning",
+            description: "Splitting a database into smaller, distinct parts to improve manageability and performance.",
+            links: []
+        }
     ]
   },
 
@@ -952,6 +1447,7 @@ module.exports = {
     title: 'Two-Phase Commit (2PC)',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'systems',
     expectedTime: '90m',
     type: 'multi-step',
     description: '**Scenario:** We are transferring money between Bank A (in US) and Bank B (in EU). These are separate systems. We must ensure that money is deducted from A *if and only if* it is added to B. Atomicity is non-negotiable.',
@@ -998,6 +1494,20 @@ It manages the transaction lifecycle:
           { input: { method: 'runTransaction', args: ['tx_100', []] }, expected: "COMMITTED", mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Distributed Transactions",
+            description: "Transactions that span two or more networked hosts. 2PC is a classic algorithm to achieve atomicity.",
+            links: []
+        },
+        {
+            title: "Consensus Protocols",
+            description: "Agreements on a value among distributed processes. 2PC is a blocking protocol; alternatives like Paxos/Raft are non-blocking but complex.",
+            links: [
+                { text: "Two-Phase Commit", url: "https://martinfowler.com/articles/patterns-of-distributed-systems/two-phase-commit.html" }
+            ]
+        }
     ]
   },
 
@@ -1006,6 +1516,7 @@ It manages the transaction lifecycle:
     title: 'Mega-Feed Aggregator',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'systems',
     expectedTime: '90m',
     type: 'multi-step',
     description: '**Scenario:** You are building the "Home Feed" for a massive social network. It aggregates content from 3 distinct microservices: "FriendsPosts", "GroupUpdates", and "RecommendedAds". All streams are infinite. You must merge them into a single time-sorted stream and support resumable scrolling (cursors).',
@@ -1088,6 +1599,18 @@ module.exports = {
           { input: { method: 'getFeed', args: [null, 2] }, expected: { items: [{id:100,t:100}, {id:95,t:95}], nextCursor: "..." }, validator: (res) => res.items.length === 2 && res.items[0].id === 100, mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Fan-Out / Fan-In",
+            description: "Distributing work to multiple services (Fan-Out) and collecting results (Fan-In). Crucial for microservices aggregators.",
+            links: []
+        },
+        {
+            title: "Opaque Cursors",
+            description: "Encoding complex state into a single string so the client doesn't need to understand implementation details.",
+            links: []
+        }
     ]
   },
 
@@ -1096,6 +1619,7 @@ module.exports = {
     title: 'Geo-Distributed Replication',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'systems',
     expectedTime: '80m',
     type: 'multi-step',
     description: '**Scenario:** We have a Global Key-Value Store. Writes go to the Master in "US-East". We need to replicate these writes to "EU-West" and "Asia-South" asynchronously. If a region goes down, we must handle failover.',
@@ -1113,7 +1637,7 @@ module.exports = {
     // push to log
   },
   getLogs(sinceIndex) { return changeLog.slice(sinceIndex); }
-};`,
+  };`,
         testCases: [
           { input: { method: 'logChange', args: ['k', 'v', 1] }, expected: undefined, mode: 'method_call' }
         ]
@@ -1141,6 +1665,20 @@ module.exports = {
           { input: { method: 'sync', args: [] }, expected: {}, mode: 'method_call' }
         ]
       }
+    ],
+    concepts: [
+        {
+            title: "Replication Lag",
+            description: "The delay between a write on the master and its appearance on a follower. In async replication, followers are 'eventually consistent'.",
+            links: []
+        },
+        {
+            title: "Leader-Follower Model",
+            description: "A common architecture where one node accepts writes (Leader) and others replicate data for reads (Followers).",
+            links: [
+                { text: "Database Replication", url: "https://aws.amazon.com/rds/features/read-replicas/" }
+            ]
+        }
     ]
   },
 
@@ -1149,6 +1687,7 @@ module.exports = {
     title: 'Custom Bloom Filter',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'dsa',
     expectedTime: '45m',
     description: `**Scenario:** We need to check if a username is taken without hitting the DB for every keystroke. A Bloom Filter is a probabilistic structure that tells us "Definitely No" or "Maybe Yes".
 
@@ -1176,6 +1715,20 @@ function solution(op) {
     testCases: [
       { input: { action: 'add', val: 'hello' }, expected: true },
       { input: { action: 'check', val: 'world' }, expected: false }
+    ],
+    concepts: [
+        {
+            title: "Probabilistic Data Structures",
+            description: "Data structures that use randomness to save space, trading accuracy for efficiency (e.g. HyperLogLog, Bloom Filter).",
+            links: [
+                { text: "Bloom Filters Explained", url: "https://llimllib.github.io/bloomfilter-tutorial/" }
+            ]
+        },
+        {
+            title: "False Positives",
+            description: "Bloom filters can say 'Yes' when the item is not actually present (False Positive), but never 'No' if it is present (False Negative).",
+            links: []
+        }
     ]
   },
 
@@ -1184,6 +1737,7 @@ function solution(op) {
     title: 'LRU Cache (LeetCode Style)',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'dsa',
     expectedTime: '50m',
     description: `**Scenario:** A classic interview problem. Design a Least Recently Used (LRU) cache.
 
@@ -1213,6 +1767,18 @@ function solution(op) {
       { input: { type: 'get', key: 1 }, expected: 1 },
       { input: { type: 'put', key: 3, val: 3 }, expected: undefined }, // evicts 2
       { input: { type: 'get', key: 2 }, expected: -1 }
+    ],
+    concepts: [
+        {
+            title: "Cache Eviction Policies",
+            description: "Algorithms to decide what to discard when cache is full. LRU (Least Recently Used) is common.",
+            links: []
+        },
+        {
+            title: "Hash Map + Linked List",
+            description: "The classic combination to achieve O(1) access (Map) and O(1) reordering (Linked List).",
+            links: []
+        }
     ]
   },
 
@@ -1221,6 +1787,7 @@ function solution(op) {
     title: 'Trie for Autocomplete',
     difficulty: 'expert',
     pLevel: 'p3',
+    category: 'dsa',
     expectedTime: '45m',
     description: `**Scenario:** Implement the backend for a search bar autocomplete.
 
@@ -1249,6 +1816,603 @@ function solution(op) {
       { input: { type: 'insert', word: 'apple' }, expected: undefined },
       { input: { type: 'insert', word: 'app' }, expected: undefined },
       { input: { type: 'search', prefix: 'app' }, expected: ['apple', 'app'] } // Order may vary, logic needed
+    ],
+    concepts: [
+        {
+            title: "Trie (Prefix Tree)",
+            description: "A tree data structure used for efficient retrieval of a key in a large dataset of strings.",
+            links: [
+                { text: "Trie Data Structure", url: "https://en.wikipedia.org/wiki/Trie" }
+            ]
+        },
+        {
+            title: "Autocomplete Systems",
+            description: "Tries are the backbone of autocomplete and spell checkers because they allow fast prefix lookups.",
+            links: []
+        }
+    ]
+  },
+
+  // --- ALGORITHMS: GRAPHS & TREES (LEETCODE STYLE) ---
+
+  {
+    id: 'num-islands',
+    title: 'Number of Islands',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '30m',
+    description: `**Scenario:** You are analyzing a map of a generated world for a game. The map is a 2D grid where '1' represents land and '0' represents water. We need to count the number of distinct islands (groups of connected '1's).
+
+**Task:** Implement \`countIslands(grid)\`.
+- Islands are formed by connecting adjacent lands horizontally or vertically.
+- You may assume all four edges of the grid are all surrounded by water.`,
+    initialCode: `function solution(grid) {
+  let count = 0;
+  // DFS or BFS to mark visited lands
+  return count;
+}`,
+    testCases: [
+      { 
+        input: [
+          ["1","1","0","0","0"],
+          ["1","1","0","0","0"],
+          ["0","0","1","0","0"],
+          ["0","0","0","1","1"]
+        ], 
+        expected: 3 
+      }
+    ],
+    concepts: [
+        {
+            title: "Depth-First Search (DFS)",
+            description: "An algorithm for traversing or searching tree or graph data structures. It starts at the root and explores as far as possible along each branch before backtracking.",
+            links: [{ text: "DFS Algorithm", url: "https://en.wikipedia.org/wiki/Depth-first_search" }]
+        },
+        {
+            title: "Flood Fill",
+            description: "An algorithm that determines the area connected to a given node in a multi-dimensional array.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'shortest-path-matrix',
+    title: 'Shortest Path in Binary Matrix',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '35m',
+    description: `**Scenario:** A robot needs to navigate a grid from top-left (0,0) to bottom-right (n-1,n-1). The cells containing '1' are obstacles, and '0' are clear paths. The robot can move in 8 directions.
+
+**Task:** Find the length of the shortest clear path. If no path exists, return -1.`,
+    initialCode: `function solution(grid) {
+  // BFS for shortest path
+  return -1;
+}`,
+    testCases: [
+      { input: [[0,1],[1,0]], expected: 2 },
+      { input: [[0,0,0],[1,1,0],[1,1,0]], expected: 4 }
+    ],
+    concepts: [
+        {
+            title: "Breadth-First Search (BFS)",
+            description: "Algorithm for traversing or searching tree or graph data structures. It explores the neighbor nodes first, before moving to the next level neighbors. Ideal for finding shortest paths in unweighted graphs.",
+            links: [{ text: "BFS Algorithm", url: "https://en.wikipedia.org/wiki/Breadth-first_search" }]
+        }
+    ]
+  },
+  {
+    id: 'course-schedule',
+    title: 'Course Schedule (Topological Sort)',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '40m',
+    description: `**Scenario:** A university needs to validate if a student can finish all courses given a list of prerequisites. Some courses depend on others.
+
+**Task:** Given \`numCourses\` and a list of \`[course, prerequisite]\` pairs, return \`true\` if it is possible to finish all courses (i.e., no circular dependencies), otherwise \`false\`.`,
+    initialCode: `function solution({ numCourses, prerequisites }) {
+  // Detect cycle in directed graph
+  return true;
+}`,
+    testCases: [
+      { input: { numCourses: 2, prerequisites: [[1,0]] }, expected: true },
+      { input: { numCourses: 2, prerequisites: [[1,0],[0,1]] }, expected: false }
+    ],
+    concepts: [
+        {
+            title: "Topological Sort",
+            description: "A linear ordering of vertices such that for every directed edge uv, vertex u comes before v in the ordering. Used for scheduling tasks with dependencies.",
+            links: [{ text: "Kahn's Algorithm", url: "https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm" }]
+        },
+        {
+            title: "Cycle Detection",
+            description: "Identifying if a graph contains a cycle. If a cycle exists in prerequisites, the courses cannot be completed.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'clone-graph',
+    title: 'Clone Graph',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '35m',
+    description: `**Scenario:** We need to deep copy a network structure where nodes reference their neighbors. Simple shallow copies won't work because they preserve references to the original nodes.
+
+**Task:** Deep copy a connected undirected graph. Each node has a \`val\` and a list of \`neighbors\`.`,
+    initialCode: `// Definition for a Node.
+// class Node {
+//   constructor(val, neighbors) {
+//     this.val = val === undefined ? 0 : val;
+//     this.neighbors = neighbors === undefined ? [] : neighbors;
+//   }
+// };
+
+function solution(node) {
+  if (!node) return null;
+  // Use a Map to track visited/cloned nodes
+  return null;
+}`,
+    testCases: [
+      { 
+        input: { val: 1, neighbors: [{ val: 2, neighbors: [] }] }, 
+        expected: { val: 1, neighbors: [{ val: 2, neighbors: [] }] },
+        validator: (res, sys) => res.val === 1 && res.neighbors[0].val === 2 && res !== sys // sys not passed correctly in validator usually, strictly checking structure
+      }
+    ],
+    concepts: [
+        {
+            title: "Deep Copy vs Shallow Copy",
+            description: "A deep copy duplicates everything. A shallow copy duplicates as little as possible. Graphs with cycles require tracking visited nodes to prevent infinite loops during copying.",
+            links: []
+        },
+        {
+            title: "Graph Traversal",
+            description: "Using BFS or DFS to visit all nodes and copy them.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'network-delay',
+    title: 'Network Delay Time',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '45m',
+    description: `**Scenario:** We send a signal from a source node in a network. Each link has a specific transmission time. We need to know how long it takes for *all* nodes to receive the signal.
+
+**Task:** Given times \`[u, v, w]\` (source, target, time), \`n\` nodes, and starting node \`k\`. Return the time when the last node receives the signal. If unreachable, return -1.`,
+    initialCode: `function solution({ times, n, k }) {
+  // Dijkstra's Algorithm
+  return -1;
+}`,
+    testCases: [
+      { input: { times: [[2,1,1],[2,3,1],[3,4,1]], n: 4, k: 2 }, expected: 2 }
+    ],
+    concepts: [
+        {
+            title: "Dijkstra's Algorithm",
+            description: "An algorithm for finding the shortest paths between nodes in a graph. It uses a priority queue to greedily select the closest unvisited node.",
+            links: [{ text: "Dijkstra's Algorithm", url: "https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm" }]
+        },
+        {
+            title: "Shortest Path Problems",
+            description: "Finding a path between two vertices in a graph such that the sum of the weights of its constituent edges is minimized.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'max-depth-tree',
+    title: 'Max Depth of Binary Tree',
+    difficulty: 'easy',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '15m',
+    description: `**Scenario:** We need to determine the height of a hierarchical structure (like an organizational chart).
+
+**Task:** Given the root of a binary tree, return its maximum depth (number of nodes along the longest path from root to leaf).`,
+    initialCode: `function solution(root) {
+  // return 0 if !root
+  return 0;
+}`,
+    testCases: [
+      { input: { val: 3, left: { val: 9 }, right: { val: 20, left: { val: 15 }, right: { val: 7 } } }, expected: 3 }
+    ],
+    concepts: [
+        {
+            title: "Tree Traversal (DFS)",
+            description: "Recursively calculating height: 1 + max(height(left), height(right)).",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'validate-bst',
+    title: 'Validate Binary Search Tree',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '25m',
+    description: `**Scenario:** Our database index is corrupted. We need to verify if the index tree is still a valid Binary Search Tree (BST).
+
+**Task:** Implement a function to check if a binary tree is a valid BST (Left < Root < Right).`,
+    initialCode: `function solution(root) {
+  // Validate recursively with min/max bounds
+  return true;
+}`,
+    testCases: [
+      { input: { val: 2, left: { val: 1 }, right: { val: 3 } }, expected: true },
+      { input: { val: 5, left: { val: 1 }, right: { val: 4, left: { val: 3 }, right: { val: 6 } } }, expected: false }
+    ],
+    concepts: [
+        {
+            title: "Binary Search Tree Property",
+            description: "For every node, all nodes in the left subtree are smaller, and all nodes in the right subtree are larger.",
+            links: [{ text: "BST Validation", url: "https://en.wikipedia.org/wiki/Binary_search_tree#Verification" }]
+        }
+    ]
+  },
+  {
+    id: 'level-order',
+    title: 'Binary Tree Level Order Traversal',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '25m',
+    description: `**Scenario:** We need to print an org chart level by level (CEO, then VPs, then Managers...).
+
+**Task:** Given a binary tree, return the level order traversal of its nodes' values as an array of arrays.`,
+    initialCode: `function solution(root) {
+  if (!root) return [];
+  const result = [];
+  // Use a queue for BFS
+  return result;
+}`,
+    testCases: [
+      { input: { val: 3, left: { val: 9 }, right: { val: 20, left: { val: 15 }, right: { val: 7 } } }, expected: [[3],[9,20],[15,7]] }
+    ],
+    concepts: [
+        {
+            title: "Breadth-First Search (BFS)",
+            description: "Processing tree nodes level by level using a Queue.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'lca-bst',
+    title: 'Lowest Common Ancestor (BST)',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '25m',
+    description: `**Scenario:** Finding the closest common manager for two employees in a hierarchy.
+
+**Task:** Given a Binary Search Tree (BST), find the Lowest Common Ancestor (LCA) of two given nodes \`p\` and \`q\`.`,
+    initialCode: `function solution({ root, p, q }) {
+  // Leverage BST properties
+  return null; // return value of LCA node
+}`,
+    testCases: [
+      { input: { root: { val: 6, left: { val: 2 }, right: { val: 8 } }, p: 2, q: 8 }, expected: 6 }
+    ],
+    concepts: [
+        {
+            title: "Lowest Common Ancestor",
+            description: "The lowest node that has both p and q as descendants.",
+            links: [{ text: "LCA Problem", url: "https://en.wikipedia.org/wiki/Lowest_common_ancestor" }]
+        }
+    ]
+  },
+  {
+    id: 'serialize-tree',
+    title: 'Serialize & Deserialize Binary Tree',
+    difficulty: 'hard',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '45m',
+    description: `**Scenario:** We need to store a tree structure in a file or send it over a network (JSON is easy, but try doing it with a string format).
+
+**Task:** Design an algorithm to serialize a binary tree to a string and deserialize it back to a tree.`,
+    initialCode: `const serializer = {
+  serialize(root) { return "[]"; },
+  deserialize(data) { return null; }
+};
+
+function solution(op) {
+  if (op.type === 'serialize') return serializer.serialize(op.root);
+  if (op.type === 'deserialize') return serializer.deserialize(op.data);
+}`,
+    testCases: [
+      { input: { type: 'serialize', root: { val: 1, left: { val: 2 }, right: { val: 3 } } }, validator: (res) => typeof res === 'string', expected: "valid_string" }
+    ],
+    concepts: [
+        {
+            title: "Serialization",
+            description: "Converting a data structure into a format that can be stored or transmitted.",
+            links: []
+        },
+        {
+            title: "Pre-order Traversal",
+            description: "A common way to serialize trees is using Pre-order traversal (Root, Left, Right).",
+            links: []
+        }
+    ]
+  },
+
+  // --- ALGORITHMS: SLIDING WINDOW & INTERVALS ---
+
+  {
+    id: 'longest-substring-unique',
+    title: 'Longest Substring Without Repeating Characters',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '30m',
+    description: `**Scenario:** String analysis. We need to find the longest sequence of unique characters in a stream.
+
+**Task:** Given a string \`s\`, find the length of the longest substring without repeating characters.`,
+    initialCode: `function solution(s) {
+  // Sliding window
+  return 0;
+}`,
+    testCases: [
+      { input: "abcabcbb", expected: 3 },
+      { input: "bbbbb", expected: 1 }
+    ],
+    concepts: [
+        {
+            title: "Sliding Window",
+            description: "Maintaining a window (subset) of data that moves across the larger dataset. Efficient for subarray/substring problems.",
+            links: [{ text: "Sliding Window Technique", url: "https://www.geeksforgeeks.org/window-sliding-technique/" }]
+        },
+        {
+            title: "Hash Set / Map",
+            description: "Using a Set to track characters currently in the window for O(1) lookups.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'min-subarray-len',
+    title: 'Minimum Size Subarray Sum',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '30m',
+    description: `**Scenario:** Financial analysis. Finding the smallest contiguous period where revenue exceeded a target.
+
+**Task:** Given an array of positive integers \`nums\` and a positive integer \`target\`, return the minimal length of a subarray whose sum is greater than or equal to \`target\`. If none, return 0.`,
+    initialCode: `function solution({ target, nums }) {
+  // Sliding window
+  return 0;
+}`,
+    testCases: [
+      { input: { target: 7, nums: [2,3,1,2,4,3] }, expected: 2 }
+    ],
+    concepts: [
+        {
+            title: "Dynamic Sliding Window",
+            description: "Expand the window until the condition is met, then shrink it from the left to find the minimum size.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'permutation-string',
+    title: 'Permutation in String',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '35m',
+    description: `**Scenario:** Security / Cryptography. Checking if a specific pattern (permutation) exists within a text.
+
+**Task:** Given two strings \`s1\` and \`s2\`, return true if \`s2\` contains a permutation of \`s1\`.`,
+    initialCode: `function solution({ s1, s2 }) {
+  // Fixed size sliding window
+  return false;
+}`,
+    testCases: [
+      { input: { s1: "ab", s2: "eidbaooo" }, expected: true },
+      { input: { s1: "ab", s2: "eidboaoo" }, expected: false }
+    ],
+    concepts: [
+        {
+            title: "Fixed Size Window",
+            description: "The window size is fixed (length of s1). Slide it across s2 and check if character counts match.",
+            links: []
+        },
+        {
+            title: "Frequency Map",
+            description: "Using an array of size 26 (for 'a'-'z') to compare character frequencies in O(1).",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'longest-repeating-char',
+    title: 'Longest Repeating Character Replacement',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '40m',
+    description: `**Scenario:** Data correction. We can change up to \`k\` characters in a corrupted signal to make it uniform. What is the longest uniform signal we can achieve?
+
+**Task:** Given a string \`s\` and integer \`k\`, return the length of the longest substring containing the same letter you can get after performing at most \`k\` character replacements.`,
+    initialCode: `function solution({ s, k }) {
+  // Sliding window
+  return 0;
+}`,
+    testCases: [
+      { input: { s: "ABAB", k: 2 }, expected: 4 },
+      { input: { s: "AABABBA", k: 1 }, expected: 4 }
+    ],
+    concepts: [
+        {
+            title: "Optimization",
+            description: "Valid window condition: (Window Length) - (Count of Most Frequent Char) <= k.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'sliding-window-max',
+    title: 'Sliding Window Maximum',
+    difficulty: 'hard',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '45m',
+    description: `**Scenario:** Real-time analytics. We need the maximum stock price in the last 10 minutes, updated every minute.
+
+**Task:** Given an array \`nums\` and sliding window size \`k\`, return the max sliding window.`,
+    initialCode: `function solution({ nums, k }) {
+  // Monotonic Queue
+  return [];
+}`,
+    testCases: [
+      { input: { nums: [1,3,-1,-3,5,3,6,7], k: 3 }, expected: [3,3,5,5,6,7] }
+    ],
+    concepts: [
+        {
+            title: "Monotonic Queue",
+            description: "A deque (double-ended queue) that maintains elements in decreasing order. Allows finding the max in O(1) and updating in O(1) amortized.",
+            links: [{ text: "Sliding Window Maximum", url: "https://leetcode.com/problems/sliding-window-maximum/solution/" }]
+        }
+    ]
+  },
+  {
+    id: 'merge-intervals',
+    title: 'Merge Intervals',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '30m',
+    description: `**Scenario:** Calendar management. Merging overlapping meeting times to block out busy slots.
+
+**Task:** Given an array of \`intervals\`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the intervals in the input.`,
+    initialCode: `function solution(intervals) {
+  // Sort and merge
+  return [];
+}`,
+    testCases: [
+      { input: [[1,3],[2,6],[8,10],[15,18]], expected: [[1,6],[8,10],[15,18]] }
+    ],
+    concepts: [
+        {
+            title: "Sorting Intervals",
+            description: "Sorting intervals by start time is usually the first step in interval problems.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'insert-interval',
+    title: 'Insert Interval',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '30m',
+    description: `**Scenario:** Scheduling. Adding a new meeting into an existing schedule of non-overlapping meetings, merging if necessary.
+
+**Task:** Given sorted non-overlapping \`intervals\` and a \`newInterval\`, insert \`newInterval\` and merge if needed.`,
+    initialCode: `function solution({ intervals, newInterval }) {
+  const result = [];
+  return result;
+}`,
+    testCases: [
+      { input: { intervals: [[1,3],[6,9]], newInterval: [2,5] }, expected: [[1,5],[6,9]] }
+    ],
+    concepts: [
+        {
+            title: "Interval Logic",
+            description: "Handling three cases: 1. New interval is before current. 2. New interval is after current. 3. Overlap (merge).",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'non-overlapping-intervals',
+    title: 'Non-overlapping Intervals',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '35m',
+    description: `**Scenario:** Resource allocation. Removing the minimum number of requests to ensure no two requests overlap.
+
+**Task:** Given a collection of intervals, find the minimum number of intervals you need to remove to make the rest of the intervals non-overlapping.`,
+    initialCode: `function solution(intervals) {
+  // Greedy approach
+  return 0;
+}`,
+    testCases: [
+      { input: [[1,2],[2,3],[3,4],[1,3]], expected: 1 }
+    ],
+    concepts: [
+        {
+            title: "Greedy Algorithm",
+            description: "Sort by *end time*. Always pick the interval that ends earliest to leave maximum room for subsequent intervals.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'meeting-rooms-2',
+    title: 'Meeting Rooms II',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '40m',
+    description: `**Scenario:** Office Management. Determining how many conference rooms are needed to accommodate a schedule of meetings.
+
+**Task:** Given an array of meeting time intervals, return the minimum number of conference rooms required.`,
+    initialCode: `function solution(intervals) {
+  // Min-Heap or Line Sweep
+  return 0;
+}`,
+    testCases: [
+      { input: [[0, 30],[5, 10],[15, 20]], expected: 2 }
+    ],
+    concepts: [
+        {
+            title: "Line Sweep / Chronological Ordering",
+            description: "Treat start times as +1 (room needed) and end times as -1 (room freed). Sort all events and track the running sum.",
+            links: []
+        },
+        {
+            title: "Min-Heap",
+            description: "Using a heap to track end times of meetings currently in progress.",
+            links: []
+        }
+    ]
+  },
+  {
+    id: 'interval-intersections',
+    title: 'Interval List Intersections',
+    difficulty: 'medium',
+    pLevel: 'p3',
+    category: 'dsa',
+    expectedTime: '35m',
+    description: `**Scenario:** Scheduling common free time. Finding the time slots where two people are both available.
+
+**Task:** Given two lists of closed intervals, return the intersection of these two interval lists.`,
+    initialCode: `function solution({ firstList, secondList }) {
+  // Two pointers
+  return [];
+}`,
+    testCases: [
+      { input: { firstList: [[0,2],[5,10]], secondList: [[1,5],[8,12]] }, expected: [[1,2],[5,5],[8,10]] }
+    ],
+    concepts: [
+        {
+            title: "Two Pointers",
+            description: "Iterate through both lists simultaneously. Intersection logic: max(start1, start2) to min(end1, end2).",
+            links: []
+        }
     ]
   }
 ];

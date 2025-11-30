@@ -559,6 +559,12 @@ button.nav-link {
 }
 
 /* Code Playground Tabs */
+@keyframes float {
+  0% { transform: translate(-50%, 0px); }
+  50% { transform: translate(-50%, -5px); }
+  100% { transform: translate(-50%, 0px); }
+}
+
 .tab-button {
   background: transparent;
   border: none;
@@ -580,3 +586,4 @@ button.nav-link {
   color: #fff;
   background-color: #333;
 }
+

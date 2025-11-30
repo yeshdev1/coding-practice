@@ -9,6 +9,7 @@ export default function BackendChallenges() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState('all')
   const [selectedPLevel, setSelectedPLevel] = useState('all')
+  const [selectedCategory, setSelectedCategory] = useState('all')
 
   const activeChallenge = useMemo(() => 
     backendChallenges.find(c => c.id === activeChallengeId), 
@@ -20,9 +21,10 @@ export default function BackendChallenges() {
       const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesDifficulty = selectedDifficulty === 'all' || challenge.difficulty === selectedDifficulty
       const matchesPLevel = selectedPLevel === 'all' || challenge.pLevel === selectedPLevel
-      return matchesSearch && matchesDifficulty && matchesPLevel
+      const matchesCategory = selectedCategory === 'all' || challenge.category === selectedCategory
+      return matchesSearch && matchesDifficulty && matchesPLevel && matchesCategory
     })
-  }, [searchTerm, selectedDifficulty, selectedPLevel])
+  }, [searchTerm, selectedDifficulty, selectedPLevel, selectedCategory])
 
   // Group challenges by difficulty for display based on filtered results
   const groupedChallenges = {
@@ -94,6 +96,21 @@ export default function BackendChallenges() {
                         <option value="p0">P0 - Must do</option>
                         <option value="p1">P1 - Should do</option>
                         <option value="p2">P2 - Good to do</option>
+                        <option value="p3">P3 - Knowledge Upskiller</option>
+                    </select>
+                </div>
+
+                <div className="filter-group">
+                    <label htmlFor="category">Category</label>
+                    <select
+                        id="category"
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                        <option value="all">All Categories</option>
+                        <option value="dsa">DSA</option>
+                        <option value="core">Core BE</option>
+                        <option value="systems">Systems</option>
                     </select>
                 </div>
             </div>
