@@ -115,45 +115,6 @@ const BackendChallengeRunner = ({ challenge }) => {
              setFiles({ 'Solution.py': 'def solution(args):\n    # Your Python code here\n    return None\n' });
              setActiveFile('Solution.py');
         }
-    } else if (newLang === 'go') {
-        const goTemplate = `package main
-
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-)
-
-// Input data structure - modify as needed for the challenge
-// For example, if input is { "id": 1 }, define:
-// type Input struct {
-//    ID int \`json:"id"\`
-// }
-// Or use map[string]interface{} for generic handling
-type Input interface{}
-
-func solution(input Input) interface{} {
-	// Write your solution here
-	return "implemented me"
-}
-
-func main() {
-	// READ INPUT from STDIN
-	var input Input
-	if err := json.NewDecoder(os.Stdin).Decode(&input); err != nil {
-		// Handle primitive inputs (like "start") if JSON fails
-		// or just ignore for now
-	}
-
-	// EXECUTE SOLUTION
-	result := solution(input)
-
-	// WRITE OUTPUT to STDOUT
-	json.NewEncoder(os.Stdout).Encode(result)
-}
-`;
-        setFiles({ 'main.go': goTemplate });
-        setActiveFile('main.go');
     } else {
         // Switch back to JS (reload from challenge data)
         if (challenge.type === 'multi-step') {
@@ -371,102 +332,6 @@ import ${activeFileName}
             mockConsole.error(err.toString());
         }
         
-        setLogs(capturedLogs);
-        return;
-    }
-
-    if (language === 'go') {
-        const currentStepObj = challenge.type === 'multi-step' ? challenge.steps[currentStep] : challenge;
-        const results = [];
-        let passedCount = 0;
-        
-        // Use the first file as the main file
-        const mainFileContent = Object.values(files)[0];
-
-        for (const testCase of currentStepObj.testCases) {
-             try {
-                 const inputStr = JSON.stringify(testCase.input);
-                 
-                 // Call Piston API
-                 const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({
-                         language: 'go',
-                         version: '1.18.0',
-                         files: [
-                             { content: mainFileContent }
-                         ],
-                         stdin: inputStr
-                     })
-                 });
-
-                 const data = await response.json();
-                 
-                 if (data.message) {
-                     throw new Error(data.message);
-                 }
-
-                 if (data.run && data.run.stderr) {
-                     // Check if it's just a build output or error
-                     // Go run often prints nothing on stderr if success, but build errors show up
-                     if (data.run.code !== 0) {
-                        throw new Error(data.run.stderr);
-                     }
-                 }
-
-                 let outputStr = data.run.stdout.trim();
-                 
-                 // Log execution
-                 capturedLogs.push({ type: 'log', content: `Input: ${inputStr}` });
-                 if (outputStr) capturedLogs.push({ type: 'log', content: `Output: ${outputStr}` });
-                 if (data.run.stderr) capturedLogs.push({ type: 'error', content: data.run.stderr });
-
-                 let actual;
-                 try {
-                    actual = JSON.parse(outputStr);
-                 } catch (e) {
-                    void e;
-                    actual = outputStr; // Fallback to raw string if not JSON
-                 }
-
-                 let matches = false;
-                 // Basic equality check for Go results
-                 // Normalize expected if it's an object
-                 const expectedStr = JSON.stringify(testCase.expected);
-                 const actualStr = JSON.stringify(actual);
-                 
-                 if (expectedStr === actualStr) {
-                     matches = true;
-                 } else if (actual === testCase.expected) {
-                     matches = true;
-                 }
-
-                 if (matches) passedCount++;
-
-                 results.push({
-                    input: testCase.input,
-                    expected: testCase.expected,
-                    actual: actual,
-                    passed: matches
-                 });
-
-             } catch (err) {
-                 capturedLogs.push({ type: 'error', content: err.toString() });
-                 results.push({
-                    input: testCase.input,
-                    expected: testCase.expected,
-                    error: err.message || "Execution failed",
-                    passed: false
-                 });
-             }
-        }
-
-        setTestResults({
-            total: currentStepObj.testCases.length,
-            passed: passedCount,
-            details: results
-        });
         setLogs(capturedLogs);
         return;
     }
@@ -728,31 +593,6 @@ import ${activeFileName}
             if (result && result.toJs) {
                 result = result.toJs({dict_converter: Object.fromEntries});
             }
-
-        } else if (language === 'go') {
-             const mainFileContent = Object.values(files)[0];
-             const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({
-                     language: 'go',
-                     version: '1.18.0',
-                     files: [{ content: mainFileContent }],
-                     stdin: customInput
-                 })
-             });
-             const data = await response.json();
-             if (data.message) throw new Error(data.message);
-             if (data.run.stderr && data.run.code !== 0) throw new Error(data.run.stderr);
-             
-             const outputStr = data.run.stdout.trim();
-             if (outputStr) capturedLogs.push({ type: 'log', content: `Output: ${outputStr}` });
-             
-             try {
-                result = JSON.parse(outputStr);
-             } catch {
-                result = outputStr;
-             }
 
         } else {
             // JavaScript
@@ -1038,14 +878,13 @@ import ${activeFileName}
                     >
                         <option value="javascript">JavaScript (Node.js)</option>
                         <option value="python">Python (Pyodide)</option>
-                        <option value="go">Go (Piston API)</option>
                     </select>
                     <button className="run-button" onClick={runTests}>Run Tests</button>
                 </div>
             </div>
             <Editor
                 height="100%"
-                language={language === 'go' ? 'go' : (language === 'python' ? 'python' : 'javascript')}
+                language={language === 'python' ? 'python' : 'javascript'}
                 value={files[activeFile] || ''}
                 onChange={handleCodeChange}
                 theme="vs-dark"
