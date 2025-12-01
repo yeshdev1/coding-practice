@@ -11,12 +11,18 @@ const BackendChallengeRunner = ({ challenge }) => {
   const [activeFile, setActiveFile] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [activeTab, setActiveTab] = useState('problem'); // 'problem' | 'concepts'
+  const [outputTab, setOutputTab] = useState('output'); // 'output' | 'testcases'
   const [language, setLanguage] = useState('javascript'); // 'javascript' | 'python'
   
   const [logs, setLogs] = useState([]);
   const [testResults, setTestResults] = useState(null);
   const [showConceptsPopover, setShowConceptsPopover] = useState(false);
+  const [showTestsPopover, setShowTestsPopover] = useState(false);
+  const [showCustomRunPopover, setShowCustomRunPopover] = useState(false);
   const [pyodide, setPyodide] = useState(null);
+
+  const [customInput, setCustomInput] = useState('');
+  const [customResult, setCustomResult] = useState(null); // { output, logs, error, passed, matchedExpected }
 
   // Initialize Pyodide
   useEffect(() => {
@@ -44,12 +50,25 @@ const BackendChallengeRunner = ({ challenge }) => {
     setTestResults(null);
     setCurrentStep(0);
     setActiveTab('problem');
+    setOutputTab('output');
     setLanguage('javascript'); // Default to JS on new challenge
     
     // Check if user has seen the concepts popover
     const hasSeenConcepts = localStorage.getItem('hasSeenConceptsPopover');
     if (!hasSeenConcepts) {
         setShowConceptsPopover(true);
+    }
+
+    // Check if user has seen the tests popover
+    const hasSeenTests = localStorage.getItem('hasSeenTestsPopover');
+    if (!hasSeenTests) {
+        setShowTestsPopover(true);
+    }
+
+    // Check if user has seen the custom run popover
+    const hasSeenCustomRun = localStorage.getItem('hasSeenCustomRunPopover');
+    if (!hasSeenCustomRun) {
+        setShowCustomRunPopover(true);
     }
     
     if (challenge.type === 'multi-step') {
@@ -60,12 +79,21 @@ const BackendChallengeRunner = ({ challenge }) => {
       });
       setFiles(initialFiles);
       setActiveFile(challenge.steps[0].fileName);
+      // Set default custom input from first test case
+      if (challenge.steps[0].testCases && challenge.steps[0].testCases.length > 0) {
+          setCustomInput(JSON.stringify(challenge.steps[0].testCases[0].input, null, 2));
+      }
     } else {
       // Legacy single-file mode
       setFiles({ 'Solution.js': challenge.initialCode || '' });
       setActiveFile('Solution.js');
+      // Set default custom input
+      if (challenge.testCases && challenge.testCases.length > 0) {
+          setCustomInput(JSON.stringify(challenge.testCases[0].input, null, 2));
+      }
     }
-  }, [challenge.id, challenge.type, challenge.steps, challenge.initialCode]);
+    setCustomResult(null);
+  }, [challenge.id, challenge.type, challenge.steps, challenge.initialCode, challenge.testCases]);
 
   const handleLanguageChange = (newLang) => {
     setLanguage(newLang);
@@ -595,6 +623,227 @@ import ${activeFileName}
     setLogs(capturedLogs);
   };
 
+  const runCustomTest = async () => {
+    setCustomResult({ loading: true });
+    
+    // Parse input
+    let parsedInput;
+    try {
+        parsedInput = JSON.parse(customInput);
+    } catch (e) {
+        setCustomResult({ error: "Invalid JSON input: " + e.message });
+        return;
+    }
+
+    const capturedLogs = [];
+    const mockConsole = {
+      log: (...args) => capturedLogs.push({ type: 'log', content: args.map(String).join(' ') }),
+      error: (...args) => capturedLogs.push({ type: 'error', content: args.map(String).join(' ') }),
+      warn: (...args) => capturedLogs.push({ type: 'warn', content: args.map(String).join(' ') }),
+    };
+
+    // Duplicate mockSystem logic (simplified for brevity, ideally shared)
+    const mockSystem = {
+      db: {
+        store: { ...(challenge.mockDb || {}) },
+        async get(key) { return this.store[key]; },
+        async set(key, val) { this.store[key] = val; },
+        async incr(key, amount = 1) { 
+            const current = this.store[key] || 0;
+            this.store[key] = current + amount;
+            return this.store[key];
+        },
+        async scan(prefix) {
+            return Object.keys(this.store)
+                .filter(k => k.startsWith(prefix))
+                .map(k => ({ key: k, value: this.store[k] }));
+        }
+      },
+      cache: {
+        store: {},
+        async get(key) { return this.store[key] || null; },
+        async set(key, val) { this.store[key] = val; }, 
+        async del(key) { delete this.store[key]; }
+      },
+      queue: {
+        items: [],
+        async push(item) { this.items.push(item); },
+        async pop() { return this.items.shift() || null; },
+        async peek() { return this.items[0] || null; }
+      },
+      lb: {
+        nodes: ['node-1', 'node-2', 'node-3'],
+        strategy: 'round-robin',
+        counter: 0,
+        getNextNode() {
+          const node = this.nodes[this.counter % this.nodes.length];
+          this.counter++;
+          return node;
+        }
+      }
+    };
+
+    try {
+        let result;
+
+        if (language === 'python') {
+            if (!pyodide) throw new Error("Pyodide not loaded");
+            
+            pyodide.registerJsModule("system", mockSystem);
+            pyodide.setStdout({ batched: (msg) => mockConsole.log(msg) });
+            pyodide.setStderr({ batched: (msg) => mockConsole.error(msg) });
+
+            const fileNames = Object.keys(files);
+            for (const fileName of fileNames) {
+                pyodide.FS.writeFile(fileName, files[fileName]);
+            }
+
+            const activeFileName = activeFile.replace('.py', '');
+            await pyodide.runPythonAsync(`
+import importlib
+import sys
+if '${activeFileName}' in sys.modules:
+    del sys.modules['${activeFileName}']
+import ${activeFileName}
+`);
+            const pyModule = pyodide.globals.get('sys').modules.get(activeFileName);
+            const solutionFn = pyModule?.solution;
+            if (!solutionFn) throw new Error(`File ${activeFile} must define a 'solution' function.`);
+
+            // Check input mode
+            if (parsedInput && parsedInput.method && parsedInput.args && !Array.isArray(parsedInput)) {
+                 // method_call heuristic
+                 const method = parsedInput.method;
+                 const args = parsedInput.args;
+                 if (solutionFn[method]) {
+                     result = await solutionFn[method](...args);
+                 } else {
+                     result = await solutionFn(parsedInput);
+                 }
+            } else {
+                 result = await solutionFn(parsedInput);
+            }
+            
+            if (result && result.toJs) {
+                result = result.toJs({dict_converter: Object.fromEntries});
+            }
+
+        } else if (language === 'go') {
+             const mainFileContent = Object.values(files)[0];
+             const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     language: 'go',
+                     version: '1.18.0',
+                     files: [{ content: mainFileContent }],
+                     stdin: customInput
+                 })
+             });
+             const data = await response.json();
+             if (data.message) throw new Error(data.message);
+             if (data.run.stderr && data.run.code !== 0) throw new Error(data.run.stderr);
+             
+             const outputStr = data.run.stdout.trim();
+             if (outputStr) capturedLogs.push({ type: 'log', content: `Output: ${outputStr}` });
+             
+             try {
+                result = JSON.parse(outputStr);
+             } catch {
+                result = outputStr;
+             }
+
+        } else {
+            // JavaScript
+            const modules = {};
+            const stepsToRun = challenge.type === 'multi-step' 
+                ? challenge.steps.slice(0, currentStep + 1) 
+                : [{ fileName: 'Solution.js' }];
+
+            for (const step of stepsToRun) {
+                const fileName = step.fileName || 'Solution.js';
+                const fileCode = files[fileName];
+                const wrappedCode = `
+                  const _customRequire = (name) => {
+                     const cleanName = name.replace('./', '');
+                     return modules[cleanName] || {};
+                  };
+                  const _exports = {};
+                  const _module = { exports: {} };
+                  const require = _customRequire;
+                  const module = _module;
+                  const exports = _exports;
+                  ${fileCode}
+                  if (Object.keys(module.exports).length > 0) return module.exports;
+                  if (Object.keys(exports).length > 0) return exports;
+                  return typeof solution !== 'undefined' ? solution : null;
+                `;
+                const fileFn = new Function('console', 'system', 'modules', wrappedCode);
+                const exported = fileFn(mockConsole, mockSystem, modules);
+                modules[fileName] = exported;
+            }
+
+            const currentStepObj = challenge.type === 'multi-step' ? challenge.steps[currentStep] : challenge;
+            const activeFileName = currentStepObj.fileName || 'Solution.js';
+            const entryPoint = modules[activeFileName];
+            
+            let userFunction = entryPoint;
+            if (typeof entryPoint === 'object' && entryPoint !== null) {
+                if (typeof entryPoint.solution === 'function') userFunction = entryPoint.solution;
+                else if (typeof entryPoint.default === 'function') userFunction = entryPoint.default;
+            }
+
+            if (typeof userFunction === 'function') {
+                 result = await userFunction(parsedInput);
+            } else if (typeof userFunction === 'object' && parsedInput.method) {
+                 if (typeof userFunction[parsedInput.method] === 'function') {
+                     result = await userFunction[parsedInput.method](...parsedInput.args);
+                 } else {
+                     throw new Error(`Method ${parsedInput.method} not found.`);
+                 }
+            } else {
+                 throw new Error("Entry point is not a function.");
+            }
+        }
+
+        // Validate against known test cases
+        let passed;
+        let matchedExpected;
+        
+        const currentStepObj = challenge.type === 'multi-step' ? challenge.steps[currentStep] : challenge;
+        if (currentStepObj.testCases) {
+             // Try to find a matching input
+             const parsedInputStr = JSON.stringify(parsedInput);
+             const matchingTestCase = currentStepObj.testCases.find(tc => JSON.stringify(tc.input) === parsedInputStr);
+             
+             if (matchingTestCase) {
+                 matchedExpected = matchingTestCase.expected;
+                 
+                 if (matchingTestCase.validator) {
+                     try {
+                         passed = matchingTestCase.validator(result, mockSystem);
+                     } catch {
+                         passed = false;
+                     }
+                 } else {
+                     try {
+                         const resultStr = typeof result === 'object' ? JSON.stringify(result) : String(result);
+                         const expectedStr = typeof matchingTestCase.expected === 'object' ? JSON.stringify(matchingTestCase.expected) : String(matchingTestCase.expected);
+                         passed = resultStr === expectedStr;
+                     } catch {
+                         passed = result === matchingTestCase.expected;
+                     }
+                 }
+             }
+        }
+
+        setCustomResult({ result, logs: capturedLogs, passed, matchedExpected });
+
+    } catch (err) {
+        setCustomResult({ error: err.toString(), logs: capturedLogs });
+    }
+  };
+
   const activeStepObj = challenge.type === 'multi-step' ? challenge.steps[currentStep] : challenge;
 
   return (
@@ -770,47 +1019,289 @@ import ${activeFileName}
             </div>
 
             <div className="output-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e1e1e', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
-            <div className="pane-header" style={{ padding: '10px', background: '#252526', borderBottom: '1px solid #333' }}>
-                Output & Test Results
+            <div className="pane-header" style={{ padding: '0 10px', background: '#252526', borderBottom: '1px solid #333', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button 
+                    className={`tab-button ${outputTab === 'output' ? 'active' : ''}`}
+                    onClick={() => setOutputTab('output')}
+                    style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: outputTab === 'output' ? '#fff' : '#888',
+                        padding: '10px 5px',
+                        borderBottom: outputTab === 'output' ? '2px solid #646cff' : '2px solid transparent',
+                        cursor: 'pointer',
+                        fontWeight: outputTab === 'output' ? 'bold' : 'normal'
+                    }}
+                >
+                    Output
+                </button>
+                <div style={{ position: 'relative' }}>
+                    <button 
+                        className={`tab-button ${outputTab === 'custom' ? 'active' : ''}`}
+                        onClick={() => {
+                            setOutputTab('custom');
+                            if (showCustomRunPopover) {
+                                setShowCustomRunPopover(false);
+                                localStorage.setItem('hasSeenCustomRunPopover', 'true');
+                            }
+                            if (typeof window.gtag === 'function') {
+                                window.gtag('event', 'view_custom_run', {
+                                    event_category: 'engagement',
+                                    event_label: challenge.id
+                                });
+                            }
+                        }}
+                        style={{ 
+                            background: 'transparent', 
+                            border: 'none', 
+                            color: outputTab === 'custom' ? '#fff' : '#888',
+                            padding: '10px 5px',
+                            borderBottom: outputTab === 'custom' ? '2px solid #646cff' : '2px solid transparent',
+                            cursor: 'pointer',
+                            fontWeight: outputTab === 'custom' ? 'bold' : 'normal'
+                        }}
+                    >
+                        Custom Run
+                    </button>
+                    {showCustomRunPopover && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '120%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: '#f59e0b',
+                            color: 'black',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            whiteSpace: 'nowrap',
+                            zIndex: 100,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                            animation: 'float 2s ease-in-out infinite',
+                            fontWeight: 'bold'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: '-4px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '4px solid transparent',
+                                borderRight: '4px solid transparent',
+                                borderBottom: '4px solid #f59e0b'
+                            }} />
+                            Try your own inputs! 🚀
+                        </div>
+                    )}
+                </div>
+                <div style={{ position: 'relative' }}>
+                    <button 
+                        className={`tab-button ${outputTab === 'testcases' ? 'active' : ''}`}
+                        onClick={() => {
+                            setOutputTab('testcases');
+                            if (showTestsPopover) {
+                                setShowTestsPopover(false);
+                                localStorage.setItem('hasSeenTestsPopover', 'true');
+                            }
+                            if (typeof window.gtag === 'function') {
+                                window.gtag('event', 'view_testcases', {
+                                    event_category: 'engagement',
+                                    event_label: challenge.id
+                                });
+                            }
+                        }}
+                        style={{ 
+                            background: 'transparent', 
+                            border: 'none', 
+                            color: outputTab === 'testcases' ? '#fff' : '#888',
+                            padding: '10px 5px',
+                            borderBottom: outputTab === 'testcases' ? '2px solid #646cff' : '2px solid transparent',
+                            cursor: 'pointer',
+                            fontWeight: outputTab === 'testcases' ? 'bold' : 'normal'
+                        }}
+                    >
+                        Test Cases
+                    </button>
+                    {showTestsPopover && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '120%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: '#2f8542',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            whiteSpace: 'nowrap',
+                            zIndex: 100,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                            animation: 'float 2s ease-in-out infinite'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: '-4px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: 0,
+                                height: 0,
+                                borderLeft: '4px solid transparent',
+                                borderRight: '4px solid transparent',
+                                borderBottom: '4px solid #2f8542'
+                            }} />
+                            See expected inputs! 🧪
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="output-content" style={{ padding: '1rem', overflow: 'auto', flex: 1, fontFamily: 'monospace' }}>
                 
-                {testResults && (
-                <div className={`test-summary ${testResults.passed === testResults.total ? 'success' : 'failure'}`} 
-                    style={{ padding: '10px', marginBottom: '1rem', borderRadius: '4px', backgroundColor: testResults.passed === testResults.total ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)', border: `1px solid ${testResults.passed === testResults.total ? '#4ade80' : '#f87171'}` }}>
-                    <h4 style={{ margin: 0, color: testResults.passed === testResults.total ? '#4ade80' : '#f87171' }}>
-                    Tests: {testResults.passed} / {testResults.total} Passed
-                    </h4>
-                </div>
-                )}
-
-                {logs.length > 0 && (
-                <div className="console-logs" style={{ marginBottom: '1rem' }}>
-                    <h5 style={{ margin: '0 0 5px 0', color: '#888' }}>Console Output:</h5>
-                    {logs.map((log, i) => (
-                    <div key={i} className={`log-entry ${log.type}`} style={{ color: log.type === 'error' ? '#f87171' : '#ccc' }}>
-                        {log.content}
-                    </div>
-                    ))}
-                </div>
-                )}
-
-                {testResults && testResults.details.map((result, i) => (
-                <div key={i} className="test-case" style={{ marginBottom: '1rem', borderLeft: `3px solid ${result.passed ? '#4ade80' : '#f87171'}`, paddingLeft: '10px' }}>
-                    <div style={{ fontWeight: 'bold', color: result.passed ? '#4ade80' : '#f87171' }}>
-                    Test Case #{i + 1}: {result.passed ? 'PASSED' : 'FAILED'}
-                    </div>
-                    {result.error ? (
-                    <div style={{ color: '#f87171' }}>Error: {result.error}</div>
-                    ) : (
+                {outputTab === 'output' ? (
                     <>
-                        <div style={{ color: '#888' }}>Input: {JSON.stringify(result.input)}</div>
-                        <div style={{ color: '#888' }}>Expected: {JSON.stringify(result.expected)}</div>
-                        {!result.passed && <div style={{ color: '#f87171' }}>Actual: {JSON.stringify(result.actual)}</div>}
+                        {testResults && (
+                        <div className={`test-summary ${testResults.passed === testResults.total ? 'success' : 'failure'}`} 
+                            style={{ padding: '10px', marginBottom: '1rem', borderRadius: '4px', backgroundColor: testResults.passed === testResults.total ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)', border: `1px solid ${testResults.passed === testResults.total ? '#4ade80' : '#f87171'}` }}>
+                            <h4 style={{ margin: 0, color: testResults.passed === testResults.total ? '#4ade80' : '#f87171' }}>
+                            Tests: {testResults.passed} / {testResults.total} Passed
+                            </h4>
+                        </div>
+                        )}
+
+                        {logs.length > 0 && (
+                        <div className="console-logs" style={{ marginBottom: '1rem' }}>
+                            <h5 style={{ margin: '0 0 5px 0', color: '#888' }}>Console Output:</h5>
+                            {logs.map((log, i) => (
+                            <div key={i} className={`log-entry ${log.type}`} style={{ color: log.type === 'error' ? '#f87171' : '#ccc' }}>
+                                {log.content}
+                            </div>
+                            ))}
+                        </div>
+                        )}
+
+                        {testResults && testResults.details.map((result, i) => (
+                        <div key={i} className="test-case" style={{ marginBottom: '1rem', borderLeft: `3px solid ${result.passed ? '#4ade80' : '#f87171'}`, paddingLeft: '10px' }}>
+                            <div style={{ fontWeight: 'bold', color: result.passed ? '#4ade80' : '#f87171' }}>
+                            Test Case #{i + 1}: {result.passed ? 'PASSED' : 'FAILED'}
+                            </div>
+                            {result.error ? (
+                            <div style={{ color: '#f87171' }}>Error: {result.error}</div>
+                            ) : (
+                            <>
+                                <div style={{ color: '#888' }}>Input: {JSON.stringify(result.input)}</div>
+                                <div style={{ color: '#888' }}>Expected: {JSON.stringify(result.expected)}</div>
+                                {!result.passed && <div style={{ color: '#f87171' }}>Actual: {JSON.stringify(result.actual)}</div>}
+                            </>
+                            )}
+                        </div>
+                        ))}
+                        
+                        {!testResults && logs.length === 0 && (
+                            <div style={{ color: '#666', fontStyle: 'italic' }}>Run tests to see output...</div>
+                        )}
                     </>
-                    )}
-                </div>
-                ))}
+                ) : outputTab === 'custom' ? (
+                    <div className="custom-run-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <div style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '5px' }}>Enter Custom Input (JSON):</div>
+                            <textarea
+                                value={customInput}
+                                onChange={(e) => setCustomInput(e.target.value)}
+                                style={{
+                                    flex: 1,
+                                    background: '#252526',
+                                    color: '#fff',
+                                    border: '1px solid #444',
+                                    borderRadius: '4px',
+                                    padding: '10px',
+                                    fontFamily: 'monospace',
+                                    resize: 'none',
+                                    minHeight: '100px'
+                                }}
+                            />
+                        </div>
+                        <button 
+                            onClick={runCustomTest}
+                            disabled={customResult?.loading}
+                            style={{
+                                background: '#646cff',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                opacity: customResult?.loading ? 0.7 : 1
+                            }}
+                        >
+                            {customResult?.loading ? 'Running...' : 'Run Custom Input'}
+                        </button>
+                        
+                        {customResult && (
+                            <div className="custom-result" style={{ marginTop: '10px', borderTop: '1px solid #333', paddingTop: '10px' }}>
+                                {customResult.error ? (
+                                    <div style={{ color: '#f87171' }}>Error: {customResult.error}</div>
+                                ) : (
+                                    <>
+                                        <div style={{ color: '#ccc', marginBottom: '5px' }}>Result:</div>
+                                        <pre style={{ 
+                                            color: '#ccc', 
+                                            overflowX: 'auto', 
+                                            padding: '10px', 
+                                            borderRadius: '4px',
+                                            backgroundColor: customResult.passed === true ? 'rgba(74, 222, 128, 0.1)' : (customResult.passed === false ? 'rgba(248, 113, 113, 0.1)' : '#333'),
+                                            border: customResult.passed === true ? '1px solid #4ade80' : (customResult.passed === false ? '1px solid #f87171' : '1px solid #444')
+                                        }}>
+                                            {typeof customResult.result === 'object' ? JSON.stringify(customResult.result, null, 2) : String(customResult.result)}
+                                        </pre>
+                                        
+                                        {customResult.passed !== undefined && (
+                                             <div style={{ marginTop: '5px', fontSize: '0.8rem' }}>
+                                                 {customResult.passed ? (
+                                                     <span style={{ color: '#4ade80' }}>✓ Matches expected output for this test case</span>
+                                                 ) : (
+                                                     <div style={{ color: '#f87171' }}>
+                                                         <div>✗ Does not match expected output</div>
+                                                         <div style={{ marginTop: '4px', color: '#ccc' }}>Expected: {JSON.stringify(customResult.matchedExpected)}</div>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                        )}
+                                    </>
+                                )}
+                                {customResult.logs && customResult.logs.length > 0 && (
+                                    <div style={{ marginTop: '10px' }}>
+                                        <div style={{ color: '#888', fontSize: '0.9rem' }}>Logs:</div>
+                                        {customResult.logs.map((log, i) => (
+                                            <div key={i} style={{ color: log.type === 'error' ? '#f87171' : '#ccc', fontSize: '0.9rem' }}>
+                                                {log.content}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="test-cases-preview">
+                        <h4 style={{ marginTop: 0, color: '#ccc' }}>Available Test Cases</h4>
+                        {activeStepObj.testCases.map((tc, i) => (
+                            <div key={i} style={{ 
+                                background: '#252526', 
+                                padding: '10px', 
+                                marginBottom: '10px', 
+                                borderRadius: '4px',
+                                borderLeft: '3px solid #646cff'
+                            }}>
+                                <div style={{ marginBottom: '5px', fontWeight: 'bold', color: '#ddd' }}>Test Case #{i + 1}</div>
+                                <div style={{ color: '#aaa', fontSize: '0.9rem' }}>
+                                    <div><span style={{ color: '#888' }}>Input:</span> {JSON.stringify(tc.input)}</div>
+                                    <div><span style={{ color: '#888' }}>Expected:</span> {JSON.stringify(tc.expected)}</div>
+                                    {tc.validator && <div style={{ color: '#646cff', fontSize: '0.8rem', fontStyle: 'italic' }}>(Custom Validator)</div>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             </div>
         </div>
