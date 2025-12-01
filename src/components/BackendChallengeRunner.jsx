@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import Editor from '@monaco-editor/react';
 import ChallengeTimer from './ChallengeTimer';
 
@@ -920,7 +921,41 @@ import ${activeFileName}
                 <ChallengeTimer initialTime={30 * 60} isCountdown={true} />
             </div>
             
-            <p style={{ color: '#ccc', whiteSpace: 'pre-wrap' }}>{activeStepObj.description}</p>
+            <div className="description-markdown" style={{ color: '#ccc' }}>
+                {/* eslint-disable no-unused-vars */}
+                <ReactMarkdown
+                    components={{
+                        h1: ({node, ...props}) => <h1 style={{ fontSize: '1.4rem', color: '#fff', marginTop: '0.5rem', marginBottom: '0.5rem' }} {...props} />,
+                        h2: ({node, ...props}) => <h2 style={{ fontSize: '1.2rem', color: '#fff', marginTop: '0.5rem', marginBottom: '0.5rem' }} {...props} />,
+                        h3: ({node, ...props}) => <h3 style={{ fontSize: '1.1rem', color: '#fff', marginTop: '0.5rem', marginBottom: '0.5rem' }} {...props} />,
+                        p: ({node, ...props}) => <p style={{ marginBottom: '0.8rem', lineHeight: '1.6' }} {...props} />,
+                        ul: ({node, ...props}) => <ul style={{ paddingLeft: '1.5rem', marginBottom: '0.8rem' }} {...props} />,
+                        ol: ({node, ...props}) => <ol style={{ paddingLeft: '1.5rem', marginBottom: '0.8rem' }} {...props} />,
+                        li: ({node, ...props}) => <li style={{ marginBottom: '0.25rem', lineHeight: '1.5' }} {...props} />,
+                        strong: ({node, ...props}) => <strong style={{ color: '#fff', fontWeight: 'bold' }} {...props} />,
+                        code: ({node, inline, className, children, ...props}) => {
+                            return !inline ? (
+                                <div style={{ background: '#2d2d2d', padding: '10px', borderRadius: '4px', overflowX: 'auto', marginBottom: '1rem', border: '1px solid #444' }}>
+                                    <code className={className} {...props} style={{ fontFamily: 'monospace', color: '#9cdcfe', fontSize: '0.9rem' }}>
+                                        {children}
+                                    </code>
+                                </div>
+                            ) : (
+                                <code className={className} {...props} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', color: '#e0e0e0', fontSize: '0.9rem' }}>
+                                    {children}
+                                </code>
+                            )
+                        },
+                        blockquote: ({node, ...props}) => (
+                            <blockquote style={{ borderLeft: '4px solid #646cff', margin: '0 0 1rem 0', padding: '0.5rem 1rem', background: 'rgba(100, 108, 255, 0.1)', color: '#ddd', fontStyle: 'italic' }} {...props} />
+                        ),
+                        a: ({node, ...props}) => <a style={{ color: '#646cff', textDecoration: 'none' }} {...props} />
+                    }}
+                >
+                    {activeStepObj.description}
+                </ReactMarkdown>
+                {/* eslint-enable no-unused-vars */}
+            </div>
             
             {challenge.type === 'multi-step' && (
                 <div className="step-progress" style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
@@ -1166,6 +1201,29 @@ import ${activeFileName}
                             Tests: {testResults.passed} / {testResults.total} Passed
                             </h4>
                         </div>
+                        )}
+
+                        {testResults && (
+                            <div style={{ 
+                                fontSize: '0.8rem', 
+                                color: '#aaa', 
+                                marginBottom: '1rem', 
+                                fontStyle: 'italic', 
+                                borderLeft: '2px solid #f59e0b', 
+                                paddingLeft: '8px',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                padding: '8px'
+                            }}>
+                                <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Disclaimer:</span> One or 2 outputs might yield incorrect or incomplete results due to environment limitations. 
+                                Please copy inputs into the 
+                                <span 
+                                    onClick={() => setOutputTab('custom')} 
+                                    style={{ color: '#646cff', cursor: 'pointer', textDecoration: 'underline', marginLeft: '4px', marginRight: '4px' }}
+                                >
+                                    Custom Run
+                                </span> 
+                                section to verify specific cases you think are correct but displayed a "FAILED" result.
+                            </div>
                         )}
 
                         {logs.length > 0 && (
