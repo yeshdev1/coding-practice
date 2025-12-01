@@ -8,6 +8,16 @@ import CounterWithHistory from '../challenges/CounterWithHistory'
 import TodoList from '../challenges/TodoList'
 import ApiDataFetcher from '../challenges/ApiDataFetcher'
 import SimpleFormValidation from '../challenges/SimpleFormValidation'
+import ToggleButton from '../challenges/ToggleButton'
+import CharacterCounter from '../challenges/CharacterCounter'
+import ShowHidePassword from '../challenges/ShowHidePassword'
+import Accordion from '../challenges/Accordion'
+import LikeButton from '../challenges/LikeButton'
+import ColorPicker from '../challenges/ColorPicker'
+import ListFilter from '../challenges/ListFilter'
+import SimplePagination from '../challenges/SimplePagination'
+import DarkModeToggle from '../challenges/DarkModeToggle'
+import TextMirror from '../challenges/TextMirror'
 
 // Medium Challenges (Common Patterns)
 import DebouncedSearchBar from '../challenges/DebouncedSearchBar'
@@ -62,18 +72,22 @@ import GameLoop from '../challenges/GameLoop'
 import PacketThrottler from '../challenges/PacketThrottler'
 import ChallengeCard from './ChallengeCard'
 
-function FrontendChallenges() {
-  const [activeChallenge, setActiveChallenge] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedDifficulty, setSelectedDifficulty] = useState('all')
-  const [selectedPLevel, setSelectedPLevel] = useState('all')
-
-  const challenges = [
+const challenges = [
     // P0 - Must do
     { id: 'counter', title: 'Counter with History', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <CounterWithHistory /> },
     { id: 'todo', title: 'Todo List', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <TodoList /> },
     { id: 'api', title: 'API Data Fetcher', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <ApiDataFetcher /> },
     { id: 'form', title: 'Simple Form Validation', difficulty: 'easy', pLevel: 'p0', expectedTime: '30m', component: <SimpleFormValidation /> },
+    { id: 'toggle', title: 'Toggle Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ToggleButton /> },
+    { id: 'charcount', title: 'Character Counter', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <CharacterCounter /> },
+    { id: 'password', title: 'Show/Hide Password', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ShowHidePassword /> },
+    { id: 'accordion', title: 'Accordion', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <Accordion /> },
+    { id: 'like', title: 'Like Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <LikeButton /> },
+    { id: 'color', title: 'Color Picker', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ColorPicker /> },
+    { id: 'filter', title: 'List Filter', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ListFilter /> },
+    { id: 'pagination', title: 'Simple Pagination', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <SimplePagination /> },
+    { id: 'darkmode', title: 'Dark Mode Toggle', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <DarkModeToggle /> },
+    { id: 'mirror', title: 'Text Mirror', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <TextMirror /> },
     { id: 'search', title: 'Debounced Search Bar', difficulty: 'medium', pLevel: 'p0', expectedTime: '25m', component: <DebouncedSearchBar /> },
     { id: 'usereducer', title: 'Complex Counter (useReducer)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseReducerCounter /> },
     { id: 'usememo', title: 'Expensive List (useMemo)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseMemoList /> },
@@ -119,6 +133,12 @@ function FrontendChallenges() {
     { id: 'browseride', title: 'Browser IDE (File System)', difficulty: 'expert', pLevel: 'p2', expectedTime: '90m+', component: <BrowserIDE /> },
     { id: 'offlinechat', title: 'Offline-First Chat App', difficulty: 'expert', pLevel: 'p2', expectedTime: '75m+', component: <OfflineChat /> },
   ]
+
+function FrontendChallenges() {
+  const [activeChallenge, setActiveChallenge] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all')
+  const [selectedPLevel, setSelectedPLevel] = useState('all')
 
   const filteredChallenges = useMemo(() => {
     return challenges.filter(challenge => {
