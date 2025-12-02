@@ -688,7 +688,7 @@ import ${activeFileName}
   const activeStepObj = challenge.type === 'multi-step' ? challenge.steps[currentStep] : challenge;
 
   return (
-    <div className="backend-runner-wrapper" style={{ display: 'flex', flexDirection: 'column', height: '90vh', gap: '10px' }}>
+    <div className="backend-runner-wrapper" style={{ display: 'flex', flexDirection: 'column', height: '95vh', gap: '10px' }}>
         
         {/* Top Level Tabs */}
         <div className="runner-tabs" style={{ display: 'flex', gap: '10px', padding: '0 10px', position: 'relative' }}>
@@ -755,12 +755,34 @@ import ${activeFileName}
       {activeTab === 'problem' ? (
         <div className="backend-runner-container" style={{ display: 'flex', flex: 1, gap: '20px', flexDirection: 'column', minHeight: 0 }}>
         
-        <div className="instructions-panel" style={{ backgroundColor: '#1e1e1e', padding: '1rem', borderRadius: '8px', border: '1px solid #333', maxHeight: '200px', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>{challenge.title} {challenge.type === 'multi-step' && `- Step ${currentStep + 1}: ${activeStepObj.title}`}</h3>
-                <ChallengeTimer initialTime={30 * 60} isCountdown={true} />
-            </div>
-            
+        {/* Sticky Timer Header */}
+        <div style={{ 
+            position: 'sticky', 
+            top: 0, 
+            zIndex: 100, 
+            backgroundColor: '#1e1e1e', 
+            padding: '1rem', 
+            borderRadius: '8px', 
+            border: '1px solid #333',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem'
+        }}>
+            <h3 style={{ margin: 0 }}>{challenge.title} {challenge.type === 'multi-step' && `- Step ${currentStep + 1}: ${activeStepObj.title}`}</h3>
+            <ChallengeTimer initialTime={30 * 60} isCountdown={true} />
+        </div>
+
+        {/* Problem Description Panel - More Space */}
+        <div className="instructions-panel" style={{ 
+            backgroundColor: '#1e1e1e', 
+            padding: '1.5rem', 
+            borderRadius: '8px', 
+            border: '1px solid #333', 
+            flex: '0 0 auto',
+            overflowY: 'auto',
+            maxHeight: '35vh'
+        }}>
             <div className="description-markdown" style={{ color: '#ccc' }}>
                 {/* eslint-disable no-unused-vars */}
                 <ReactMarkdown
@@ -775,11 +797,11 @@ import ${activeFileName}
                         strong: ({node, ...props}) => <strong style={{ color: '#fff', fontWeight: 'bold' }} {...props} />,
                         code: ({node, inline, className, children, ...props}) => {
                             return !inline ? (
-                                <div style={{ background: '#2d2d2d', padding: '10px', borderRadius: '4px', overflowX: 'auto', marginBottom: '1rem', border: '1px solid #444' }}>
-                                    <code className={className} {...props} style={{ fontFamily: 'monospace', color: '#9cdcfe', fontSize: '0.9rem' }}>
+                                <pre style={{ background: '#2d2d2d', padding: '10px', borderRadius: '4px', overflowX: 'auto', marginBottom: '1rem', border: '1px solid #444', margin: '0.8rem 0' }}>
+                                    <code className={className} {...props} style={{ fontFamily: 'monospace', color: '#9cdcfe', fontSize: '0.9rem', display: 'block' }}>
                                         {children}
                                     </code>
-                                </div>
+                                </pre>
                             ) : (
                                 <code className={className} {...props} style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', color: '#e0e0e0', fontSize: '0.9rem' }}>
                                     {children}
@@ -832,8 +854,8 @@ import ${activeFileName}
             )}
         </div>
 
-        <div className="workspace" style={{ display: 'flex', flex: 1, gap: '20px', minHeight: 0 }}>
-            <div className="editor-pane" style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
+        <div className="workspace" style={{ display: 'flex', flex: 1, gap: '20px', minHeight: '500px', overflow: 'hidden' }}>
+            <div className="editor-pane" style={{ flex: 2, display: 'flex', flexDirection: 'column', minHeight: '500px' }}>
             <div className="pane-header" style={{ padding: '10px', background: '#252526', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 
                 {/* File Tabs */}
@@ -888,7 +910,13 @@ import ${activeFileName}
                 value={files[activeFile] || ''}
                 onChange={handleCodeChange}
                 theme="vs-dark"
-                options={{ minimap: { enabled: false }, fontSize: 14, readOnly: false }} // Could make previous files readonly
+                options={{ 
+                    minimap: { enabled: false }, 
+                    fontSize: 14, 
+                    readOnly: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true
+                }}
             />
             </div>
 

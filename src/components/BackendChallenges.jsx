@@ -1,44 +1,80 @@
 import { useState, useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import '../App.css'
 import ChallengeCard from './ChallengeCard'
 import BackendChallengeRunner from './BackendChallengeRunner'
-import { backendChallenges } from '../challenges/backend/data'
+import { getAllChallenges, getChallengeBySlug } from '../challenges/backend/index'
 
 export default function BackendChallenges() {
-  const [activeChallengeId, setActiveChallengeId] = useState(null)
+  const { slug } = useParams()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState('all')
   const [selectedPLevel, setSelectedPLevel] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
-  const activeChallenge = useMemo(() => 
-    backendChallenges.find(c => c.id === activeChallengeId), 
-    [activeChallengeId]
-  );
+  // Get all challenges (cached, computed once)
+  const allChallenges = useMemo(() => getAllChallenges(), [])
 
+  // O(1) lookup by slug using index map
+  const activeChallenge = useMemo(() => {
+    if (!slug) return null
+    return getChallengeBySlug(slug)
+  }, [slug])
+
+  // Optimized filtering with early exit
   const filteredChallenges = useMemo(() => {
-    return backendChallenges.filter(challenge => {
-      const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesDifficulty = selectedDifficulty === 'all' || challenge.difficulty === selectedDifficulty
-      const matchesPLevel = selectedPLevel === 'all' || challenge.pLevel === selectedPLevel
-      const matchesCategory = selectedCategory === 'all' || challenge.category === selectedCategory
-      return matchesSearch && matchesDifficulty && matchesPLevel && matchesCategory
+    const searchLower = searchTerm.toLowerCase()
+    const hasSearch = searchLower.length > 0
+    const hasDifficultyFilter = selectedDifficulty !== 'all'
+    const hasPLevelFilter = selectedPLevel !== 'all'
+    const hasCategoryFilter = selectedCategory !== 'all'
+    
+    // Early exit if no filters
+    if (!hasSearch && !hasDifficultyFilter && !hasPLevelFilter && !hasCategoryFilter) {
+      return allChallenges
+    }
+    
+    return allChallenges.filter(challenge => {
+      // Search filter (most expensive, check first and short-circuit)
+      if (hasSearch && !challenge.title.toLowerCase().includes(searchLower)) {
+        return false
+      }
+      
+      // Fast property checks
+      if (hasDifficultyFilter && challenge.difficulty !== selectedDifficulty) {
+        return false
+      }
+      
+      if (hasPLevelFilter && challenge.pLevel !== selectedPLevel) {
+        return false
+      }
+      
+      if (hasCategoryFilter && challenge.category !== selectedCategory) {
+        return false
+      }
+      
+      return true
     })
-  }, [searchTerm, selectedDifficulty, selectedPLevel, selectedCategory])
+  }, [allChallenges, searchTerm, selectedDifficulty, selectedPLevel, selectedCategory])
 
-  // Group challenges by difficulty for display based on filtered results
-  const groupedChallenges = {
-    easy: filteredChallenges.filter(c => c.difficulty === 'easy'),
-    medium: filteredChallenges.filter(c => c.difficulty === 'medium'),
-    hard: filteredChallenges.filter(c => c.difficulty === 'hard'),
-    expert: filteredChallenges.filter(c => c.difficulty === 'expert'),
-  }
+  // Optimized grouping - compute once from filtered results
+  const groupedChallenges = useMemo(() => {
+    const groups = { easy: [], medium: [], hard: [], expert: [] }
+    filteredChallenges.forEach(challenge => {
+      const diff = challenge.difficulty
+      if (groups[diff]) {
+        groups[diff].push(challenge)
+      }
+    })
+    return groups
+  }, [filteredChallenges])
 
   if (activeChallenge) {
     return (
       <div className="challenge-view-container">
         <div className="challenge-header">
-           <button className="back-button" onClick={() => setActiveChallengeId(null)}>
+           <button className="back-button" onClick={() => navigate('/backend')}>
             ← Back to Challenges
           </button>
         </div>
@@ -128,7 +164,6 @@ export default function BackendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallengeId} 
                     />
                 ))}
                 </div>
@@ -143,7 +178,6 @@ export default function BackendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallengeId} 
                     />
                 ))}
                 </div>
@@ -158,7 +192,6 @@ export default function BackendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallengeId} 
                     />
                 ))}
                 </div>
@@ -173,7 +206,6 @@ export default function BackendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallengeId} 
                     />
                 ))}
                 </div>

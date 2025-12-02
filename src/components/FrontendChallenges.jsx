@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import reactLogo from '../assets/react.svg'
 import viteLogo from '/vite.svg'
 import '../App.css'
@@ -74,71 +75,78 @@ import ChallengeCard from './ChallengeCard'
 
 const challenges = [
     // P0 - Must do
-    { id: 'counter', title: 'Counter with History', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <CounterWithHistory /> },
-    { id: 'todo', title: 'Todo List', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <TodoList /> },
-    { id: 'api', title: 'API Data Fetcher', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <ApiDataFetcher /> },
-    { id: 'form', title: 'Simple Form Validation', difficulty: 'easy', pLevel: 'p0', expectedTime: '30m', component: <SimpleFormValidation /> },
-    { id: 'toggle', title: 'Toggle Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ToggleButton /> },
-    { id: 'charcount', title: 'Character Counter', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <CharacterCounter /> },
-    { id: 'password', title: 'Show/Hide Password', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ShowHidePassword /> },
-    { id: 'accordion', title: 'Accordion', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <Accordion /> },
-    { id: 'like', title: 'Like Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <LikeButton /> },
-    { id: 'color', title: 'Color Picker', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ColorPicker /> },
-    { id: 'filter', title: 'List Filter', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ListFilter /> },
-    { id: 'pagination', title: 'Simple Pagination', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <SimplePagination /> },
-    { id: 'darkmode', title: 'Dark Mode Toggle', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <DarkModeToggle /> },
-    { id: 'mirror', title: 'Text Mirror', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <TextMirror /> },
-    { id: 'search', title: 'Debounced Search Bar', difficulty: 'medium', pLevel: 'p0', expectedTime: '25m', component: <DebouncedSearchBar /> },
-    { id: 'usereducer', title: 'Complex Counter (useReducer)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseReducerCounter /> },
-    { id: 'usememo', title: 'Expensive List (useMemo)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseMemoList /> },
-    { id: 'usecallback', title: 'Toolbar Optimization (useCallback)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseCallbackToolbar /> },
-    { id: 'useref', title: 'Timer & DOM (useRef)', difficulty: 'medium', pLevel: 'p0', expectedTime: '25m', component: <UseRefTimer /> },
-    { id: 'deepeffect', title: 'Deep useEffect Synchronization', difficulty: 'hard', pLevel: 'p0', expectedTime: '45m', component: <DeepUseEffect /> },
-    { id: 'deepreducer', title: 'Full State Machine (useReducer)', difficulty: 'hard', pLevel: 'p0', expectedTime: '50m', component: <DeepUseReducer /> },
-    { id: 'builder', title: 'Context Form Builder', difficulty: 'hard', pLevel: 'p0', expectedTime: '60m', component: <ContextFormBuilder /> },
+    { id: 'counter', title: 'Counter with History', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <CounterWithHistory />, slug: 'counter-with-history' },
+    { id: 'todo', title: 'Todo List', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <TodoList />, slug: 'todo-list' },
+    { id: 'api', title: 'API Data Fetcher', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <ApiDataFetcher />, slug: 'api-data-fetcher' },
+    { id: 'form', title: 'Simple Form Validation', difficulty: 'easy', pLevel: 'p0', expectedTime: '30m', component: <SimpleFormValidation />, slug: 'simple-form-validation' },
+    { id: 'toggle', title: 'Toggle Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ToggleButton />, slug: 'toggle-button' },
+    { id: 'charcount', title: 'Character Counter', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <CharacterCounter />, slug: 'character-counter' },
+    { id: 'password', title: 'Show/Hide Password', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <ShowHidePassword />, slug: 'show-hide-password' },
+    { id: 'accordion', title: 'Accordion', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <Accordion />, slug: 'accordion' },
+    { id: 'like', title: 'Like Button', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <LikeButton />, slug: 'like-button' },
+    { id: 'color', title: 'Color Picker', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ColorPicker />, slug: 'color-picker' },
+    { id: 'filter', title: 'List Filter', difficulty: 'easy', pLevel: 'p0', expectedTime: '20m', component: <ListFilter />, slug: 'list-filter' },
+    { id: 'pagination', title: 'Simple Pagination', difficulty: 'easy', pLevel: 'p0', expectedTime: '25m', component: <SimplePagination />, slug: 'simple-pagination' },
+    { id: 'darkmode', title: 'Dark Mode Toggle', difficulty: 'easy', pLevel: 'p0', expectedTime: '15m', component: <DarkModeToggle />, slug: 'dark-mode-toggle' },
+    { id: 'mirror', title: 'Text Mirror', difficulty: 'easy', pLevel: 'p0', expectedTime: '10m', component: <TextMirror />, slug: 'text-mirror' },
+    { id: 'search', title: 'Debounced Search Bar', difficulty: 'medium', pLevel: 'p0', expectedTime: '25m', component: <DebouncedSearchBar />, slug: 'debounced-search-bar' },
+    { id: 'usereducer', title: 'Complex Counter (useReducer)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseReducerCounter />, slug: 'complex-counter-usereducer' },
+    { id: 'usememo', title: 'Expensive List (useMemo)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseMemoList />, slug: 'expensive-list-usememo' },
+    { id: 'usecallback', title: 'Toolbar Optimization (useCallback)', difficulty: 'medium', pLevel: 'p0', expectedTime: '20m', component: <UseCallbackToolbar />, slug: 'toolbar-optimization-usecallback' },
+    { id: 'useref', title: 'Timer & DOM (useRef)', difficulty: 'medium', pLevel: 'p0', expectedTime: '25m', component: <UseRefTimer />, slug: 'timer-dom-useref' },
+    { id: 'deepeffect', title: 'Deep useEffect Synchronization', difficulty: 'hard', pLevel: 'p0', expectedTime: '45m', component: <DeepUseEffect />, slug: 'deep-useeffect-synchronization' },
+    { id: 'deepreducer', title: 'Full State Machine (useReducer)', difficulty: 'hard', pLevel: 'p0', expectedTime: '50m', component: <DeepUseReducer />, slug: 'full-state-machine-usereducer' },
+    { id: 'builder', title: 'Context Form Builder', difficulty: 'hard', pLevel: 'p0', expectedTime: '60m', component: <ContextFormBuilder />, slug: 'context-form-builder' },
 
     // P1 - Should do
-    { id: 'infinite', title: 'Infinite Scroll', difficulty: 'medium', pLevel: 'p1', expectedTime: '40m', component: <InfiniteScroll /> },
-    { id: 'star', title: 'Star Rating', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <StarRating /> },
-    { id: 'modal', title: 'Modal System', difficulty: 'medium', pLevel: 'p1', expectedTime: '35m', component: <ModalSystem /> },
-    { id: 'traffic', title: 'Traffic Light', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <TrafficLight /> },
-    { id: 'progress', title: 'Progress Bar', difficulty: 'medium', pLevel: 'p1', expectedTime: '20m', component: <ProgressBar /> },
-    { id: 'carousel', title: 'Image Carousel', difficulty: 'medium', pLevel: 'p1', expectedTime: '40m', component: <Carousel /> },
-    { id: 'stopwatch', title: 'Stopwatch', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <Stopwatch /> },
-    { id: 'tabs', title: 'Tabs Component', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <Tabs /> },
-    { id: 'alerts', title: 'Auto-Dismiss Alerts (Toast)', difficulty: 'medium', pLevel: 'p1', expectedTime: '35m', component: <AutoDismissAlerts /> },
-    { id: 'countdown', title: 'Countdown Timer', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <CountdownTimer /> },
-    { id: 'uselayouteffect', title: 'Tooltip Positioning (useLayoutEffect)', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <UseLayoutEffectTooltip /> },
-    { id: 'virtual', title: 'Virtual List', difficulty: 'hard', pLevel: 'p1', expectedTime: '60m', component: <VirtualList /> },
-    { id: 'deepcontext', title: 'Context Performance Optimization', difficulty: 'hard', pLevel: 'p1', expectedTime: '50m', component: <DeepContextPerformance /> },
-    { id: 'advhooks', title: 'Advanced Custom Hooks System', difficulty: 'hard', pLevel: 'p1', expectedTime: '55m', component: <AdvancedCustomHooks /> },
+    { id: 'infinite', title: 'Infinite Scroll', difficulty: 'medium', pLevel: 'p1', expectedTime: '40m', component: <InfiniteScroll />, slug: 'infinite-scroll' },
+    { id: 'star', title: 'Star Rating', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <StarRating />, slug: 'star-rating' },
+    { id: 'modal', title: 'Modal System', difficulty: 'medium', pLevel: 'p1', expectedTime: '35m', component: <ModalSystem />, slug: 'modal-system' },
+    { id: 'traffic', title: 'Traffic Light', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <TrafficLight />, slug: 'traffic-light' },
+    { id: 'progress', title: 'Progress Bar', difficulty: 'medium', pLevel: 'p1', expectedTime: '20m', component: <ProgressBar />, slug: 'progress-bar' },
+    { id: 'carousel', title: 'Image Carousel', difficulty: 'medium', pLevel: 'p1', expectedTime: '40m', component: <Carousel />, slug: 'image-carousel' },
+    { id: 'stopwatch', title: 'Stopwatch', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <Stopwatch />, slug: 'stopwatch' },
+    { id: 'tabs', title: 'Tabs Component', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <Tabs />, slug: 'tabs-component' },
+    { id: 'alerts', title: 'Auto-Dismiss Alerts (Toast)', difficulty: 'medium', pLevel: 'p1', expectedTime: '35m', component: <AutoDismissAlerts />, slug: 'auto-dismiss-alerts-toast' },
+    { id: 'countdown', title: 'Countdown Timer', difficulty: 'medium', pLevel: 'p1', expectedTime: '25m', component: <CountdownTimer />, slug: 'countdown-timer' },
+    { id: 'uselayouteffect', title: 'Tooltip Positioning (useLayoutEffect)', difficulty: 'medium', pLevel: 'p1', expectedTime: '30m', component: <UseLayoutEffectTooltip />, slug: 'tooltip-positioning-uselayouteffect' },
+    { id: 'virtual', title: 'Virtual List', difficulty: 'hard', pLevel: 'p1', expectedTime: '60m', component: <VirtualList />, slug: 'virtual-list' },
+    { id: 'deepcontext', title: 'Context Performance Optimization', difficulty: 'hard', pLevel: 'p1', expectedTime: '50m', component: <DeepContextPerformance />, slug: 'context-performance-optimization' },
+    { id: 'advhooks', title: 'Advanced Custom Hooks System', difficulty: 'hard', pLevel: 'p1', expectedTime: '55m', component: <AdvancedCustomHooks />, slug: 'advanced-custom-hooks-system' },
 
     // P2 - Good to do
-    { id: 'tictactoe', title: 'Tic Tac Toe', difficulty: 'medium', pLevel: 'p2', expectedTime: '45m', component: <TicTacToe /> },
-    { id: 'useimperativehandle', title: 'Modal API (useImperativeHandle)', difficulty: 'medium', pLevel: 'p2', expectedTime: '30m', component: <UseImperativeHandleModal /> },
-    { id: 'usedeferredvalue', title: 'Responsive Search (useDeferredValue)', difficulty: 'medium', pLevel: 'p2', expectedTime: '25m', component: <UseDeferredValueSearch /> },
-    { id: 'usetransition', title: 'Tab Transition (useTransition)', difficulty: 'medium', pLevel: 'p2', expectedTime: '25m', component: <UseTransitionTabs /> },
-    { id: 'useid', title: 'Accessible Form (useId)', difficulty: 'medium', pLevel: 'p2', expectedTime: '20m', component: <UseIdForm /> },
-    { id: 'comments', title: 'Nested Comments', difficulty: 'hard', pLevel: 'p2', expectedTime: '50m', component: <NestedComments /> },
-    { id: 'dnd', title: 'Drag and Drop Board', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <DragAndDropBoard /> },
-    { id: 'deepref', title: 'Legacy Integration (Refs & Lifecycle)', difficulty: 'hard', pLevel: 'p2', expectedTime: '45m', component: <DeepRefLifecycle /> },
-    { id: 'vdom', title: 'Virtual DOM vs Direct DOM Optimization', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <VirtualDomOptimization /> },
-    { id: 'worker', title: 'Worker Pool & Offloading', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <WorkerOffloading /> },
-    { id: 'gameloop', title: 'High-Frequency Game Loop', difficulty: 'hard', pLevel: 'p2', expectedTime: '45m', component: <GameLoop /> },
-    { id: 'throttler', title: 'Async Packet Throttler', difficulty: 'hard', pLevel: 'p2', expectedTime: '40m', component: <PacketThrottler /> },
+    { id: 'tictactoe', title: 'Tic Tac Toe', difficulty: 'medium', pLevel: 'p2', expectedTime: '45m', component: <TicTacToe />, slug: 'tic-tac-toe' },
+    { id: 'useimperativehandle', title: 'Modal API (useImperativeHandle)', difficulty: 'medium', pLevel: 'p2', expectedTime: '30m', component: <UseImperativeHandleModal />, slug: 'modal-api-useimperativehandle' },
+    { id: 'usedeferredvalue', title: 'Responsive Search (useDeferredValue)', difficulty: 'medium', pLevel: 'p2', expectedTime: '25m', component: <UseDeferredValueSearch />, slug: 'responsive-search-usedeferredvalue' },
+    { id: 'usetransition', title: 'Tab Transition (useTransition)', difficulty: 'medium', pLevel: 'p2', expectedTime: '25m', component: <UseTransitionTabs />, slug: 'tab-transition-usetransition' },
+    { id: 'useid', title: 'Accessible Form (useId)', difficulty: 'medium', pLevel: 'p2', expectedTime: '20m', component: <UseIdForm />, slug: 'accessible-form-useid' },
+    { id: 'comments', title: 'Nested Comments', difficulty: 'hard', pLevel: 'p2', expectedTime: '50m', component: <NestedComments />, slug: 'nested-comments' },
+    { id: 'dnd', title: 'Drag and Drop Board', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <DragAndDropBoard />, slug: 'drag-and-drop-board' },
+    { id: 'deepref', title: 'Legacy Integration (Refs & Lifecycle)', difficulty: 'hard', pLevel: 'p2', expectedTime: '45m', component: <DeepRefLifecycle />, slug: 'legacy-integration-refs-lifecycle' },
+    { id: 'vdom', title: 'Virtual DOM vs Direct DOM Optimization', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <VirtualDomOptimization />, slug: 'virtual-dom-vs-direct-dom-optimization' },
+    { id: 'worker', title: 'Worker Pool & Offloading', difficulty: 'hard', pLevel: 'p2', expectedTime: '60m', component: <WorkerOffloading />, slug: 'worker-pool-offloading' },
+    { id: 'gameloop', title: 'High-Frequency Game Loop', difficulty: 'hard', pLevel: 'p2', expectedTime: '45m', component: <GameLoop />, slug: 'high-frequency-game-loop' },
+    { id: 'throttler', title: 'Async Packet Throttler', difficulty: 'hard', pLevel: 'p2', expectedTime: '40m', component: <PacketThrottler />, slug: 'async-packet-throttler' },
     
     // Expert Challenges (P2)
-    { id: 'spreadsheet', title: 'Collaborative Spreadsheet Engine', difficulty: 'expert', pLevel: 'p2', expectedTime: '90m+', component: <CollaborativeSpreadsheet /> },
-    { id: 'minifigma', title: 'Mini Figma (Vector Editor)', difficulty: 'expert', pLevel: 'p2', expectedTime: '120m+', component: <MiniFigma /> },
-    { id: 'browseride', title: 'Browser IDE (File System)', difficulty: 'expert', pLevel: 'p2', expectedTime: '90m+', component: <BrowserIDE /> },
-    { id: 'offlinechat', title: 'Offline-First Chat App', difficulty: 'expert', pLevel: 'p2', expectedTime: '75m+', component: <OfflineChat /> },
+    { id: 'spreadsheet', title: 'Collaborative Spreadsheet Engine', difficulty: 'expert', pLevel: 'p2', expectedTime: '90m+', component: <CollaborativeSpreadsheet />, slug: 'collaborative-spreadsheet-engine' },
+    { id: 'minifigma', title: 'Mini Figma (Vector Editor)', difficulty: 'expert', pLevel: 'p2', expectedTime: '120m+', component: <MiniFigma />, slug: 'mini-figma-vector-editor' },
+    { id: 'browseride', title: 'Browser IDE (File System)', difficulty: 'expert', pLevel: 'p2', expectedTime: '90m+', component: <BrowserIDE />, slug: 'browser-ide-file-system' },
+    { id: 'offlinechat', title: 'Offline-First Chat App', difficulty: 'expert', pLevel: 'p2', expectedTime: '75m+', component: <OfflineChat />, slug: 'offline-first-chat-app' },
   ]
 
 function FrontendChallenges() {
-  const [activeChallenge, setActiveChallenge] = useState(null)
+  const { slug } = useParams()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState('all')
   const [selectedPLevel, setSelectedPLevel] = useState('all')
+
+  // Find active challenge by slug
+  const activeChallenge = useMemo(() => {
+    if (!slug) return null
+    return challenges.find(c => c.slug === slug)
+  }, [slug])
 
   const filteredChallenges = useMemo(() => {
     return challenges.filter(challenge => {
@@ -161,12 +169,12 @@ function FrontendChallenges() {
     return (
       <div className="challenge-view-container">
         <div className="challenge-header">
-           <button className="back-button" onClick={() => setActiveChallenge(null)}>
+           <button className="back-button" onClick={() => navigate('/frontend')}>
             ← Back to Challenges
           </button>
         </div>
         <div className="challenge-workspace">
-          {challenges.find(c => c.id === activeChallenge)?.component}
+          {activeChallenge.component}
         </div>
       </div>
     )
@@ -244,7 +252,6 @@ function FrontendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallenge} 
                     />
                 ))}
                 </div>
@@ -259,7 +266,6 @@ function FrontendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallenge} 
                     />
                 ))}
                 </div>
@@ -274,7 +280,6 @@ function FrontendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallenge} 
                     />
                 ))}
                 </div>
@@ -289,7 +294,6 @@ function FrontendChallenges() {
                     <ChallengeCard 
                     key={challenge.id} 
                     challenge={challenge} 
-                    onClick={setActiveChallenge} 
                     />
                 ))}
                 </div>

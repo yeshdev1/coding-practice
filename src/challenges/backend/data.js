@@ -392,9 +392,52 @@ export const backendChallenges = [
     pLevel: 'p1',
     category: 'core',
     expectedTime: '25m',
-    description: `**Scenario:** We are building a micro-framework similar to Express.js. We need a way to run a request through a sequence of middleware functions (authentication, logging, body parsing) before handling it.
+    description: `### **Understanding Middleware Chains**
 
-**Task:** Implement a function that takes a list of middleware tasks and executes them in order. Each task receives the data and modifies it for the next one.`,
+In web frameworks like Express.js, middleware functions process requests in sequence. Each middleware can:
+- Modify the request/response
+- Call the next middleware
+- Terminate the chain early
+
+**Why Middleware?**
+- **Separation of Concerns**: Each middleware handles one responsibility (auth, logging, parsing)
+- **Composability**: Chain multiple middleware together
+- **Reusability**: Use same middleware across different routes
+
+---
+
+### **The Task**
+
+Implement a function that processes a sequence of operations on a value. Each operation modifies the value, and the result is passed to the next operation.
+
+**Operations Format:**
+- \`"SET n"\`: Set value to n
+- \`"ADD n"\`: Add n to current value
+- \`"SUBTRACT n"\`: Subtract n from current value
+- \`"MULTIPLY n"\`: Multiply current value by n
+- \`"DIVIDE n"\`: Divide current value by n
+
+**Implementation Approach:**
+1. Start with value \`0\`
+2. For each operation string:
+   - Parse the operation type and number
+   - Apply the operation to current value
+   - Update the value
+3. Return final value
+
+**Example:**
+\`\`\`javascript
+solution(["ADD 1", "MULTIPLY 2"]) →
+  Start: 0
+  "ADD 1" → 0 + 1 = 1
+  "MULTIPLY 2" → 1 * 2 = 2
+  Return: 2
+\`\`\`
+
+**Key Points:**
+- Parse each operation string (split by space)
+- Maintain state (current value) across operations
+- Handle division carefully (floating point results)`,
     initialCode: `async function solution(mw) { return 0; }`,
     testCases: [
       { input: ["ADD 1"], expected: 1 },
@@ -623,9 +666,55 @@ export const backendChallenges = [
     pLevel: 'p2',
     category: 'core',
     expectedTime: '25m',
-    description: `**Scenario:** The Data Science team asks for a CSV export of our user data. However, our data is stored in MongoDB as complex nested objects. CSVs require flat columns.
+    description: `### **Understanding Object Flattening**
 
-**Task:** Write a function that flattens a nested object into a single-level object using dot notation for keys (e.g., \`{ user: { name: 'A' } }\` becomes \`{ "user.name": "A" }\`).`,
+Nested objects (like MongoDB documents) need to be flattened for:
+- **CSV Export**: CSV requires flat columns, not nested structures
+- **Database Storage**: Some databases prefer flat schemas
+- **API Responses**: Some APIs return flattened data
+
+**The Transformation:**
+- Input: \`{ user: { name: "John", age: 30 } }\`
+- Output: \`{ "user.name": "John", "user.age": 30 }\`
+
+---
+
+### **The Algorithm**
+
+Use **recursive traversal** (DFS) to visit all nested properties:
+
+1. **Iterate through object keys**:
+   - For each key-value pair in the object
+
+2. **Check if value is an object**:
+   - If value is an object (and not array/null), recursively flatten it
+   - Prefix the nested keys with current key + "."
+   - Example: \`{a: {b: 1}}\` → flatten \`{b: 1}\` with prefix "a." → \`{"a.b": 1}\`
+
+3. **If value is primitive** (string, number, etc.):
+   - Add it directly to result with current key
+   - Example: \`{a: 1}\` → \`{a: 1}\`
+
+**Implementation Hint:**
+\`\`\`javascript
+function flatten(obj, prefix = "", result = {}) {
+  for (const key in obj) {
+    const newKey = prefix ? \`\${prefix}.\${key}\` : key;
+    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+      flatten(obj[key], newKey, result); // Recursive
+    } else {
+      result[newKey] = obj[key]; // Primitive value
+    }
+  }
+  return result;
+}
+\`\`\`
+
+**Edge Cases:**
+- **Empty object**: Return empty object
+- **Arrays**: Typically keep arrays as-is (don't flatten array indices)
+- **Null values**: Handle null appropriately
+- **Deep nesting**: Works for any depth`,
     initialCode: `function solution(obj) { return {}; }`,
     testCases: [
       { input: {a:{b:1}}, expected: {"a.b":1} },
@@ -669,12 +758,63 @@ export const backendChallenges = [
     pLevel: 'p1',
     category: 'core',
     expectedTime: '30m',
-    description: `**Scenario:** The "Social Feed" endpoint is getting slower as users scroll deeper. We are currently using Offset-based pagination (\`SKIP 10000 LIMIT 10\`), which is O(N). We need to switch to Cursor-based pagination for O(1) performance.
+    description: `### **Understanding Cursor-Based Pagination**
 
-**Task:** Implement \`getFeed(cursor, limit)\`.
-- The \`cursor\` is the ID of the last item seen.
-- Assume items have sequential IDs.
-- Return \`nextItems\` (where ID > cursor) and the new \`nextCursor\`.`,
+**The Problem with Offset Pagination:**
+- \`SELECT * FROM posts ORDER BY id LIMIT 10 OFFSET 10000\`
+- Database must scan and skip 10,000 rows → **O(N)** complexity
+- Gets slower as users scroll deeper
+
+**The Solution: Cursor Pagination:**
+- \`SELECT * FROM posts WHERE id > 10000 ORDER BY id LIMIT 10\`
+- Uses index on ID → **O(1)** complexity
+- Fast regardless of scroll depth
+
+---
+
+### **The Implementation**
+
+**Method: \`getFeed(cursor, limit)\`**
+
+**Parameters:**
+- \`cursor\`: The ID of the last item seen (or \`null\` for first page)
+- \`limit\`: Number of items to return
+
+**What You Need to Do:**
+
+1. **Find Starting Position**:
+   - If \`cursor\` is \`null\`, start from beginning (index 0)
+   - If \`cursor\` exists, find the item with that ID in the database array
+   - Start from the **next** item after the cursor
+
+2. **Get Items**:
+   - Slice the array from starting position
+   - Take up to \`limit\` items
+   - Filter: \`items.filter(item => !cursor || item.id > cursor).slice(0, limit)\`
+
+3. **Determine Next Cursor**:
+   - If items returned < limit → no more pages, return \`null\`
+   - Otherwise, return the ID of the last item in the result
+
+**Example:**
+\`\`\`javascript
+// db = [{id:1}, {id:2}, {id:3}, {id:4}, {id:5}]
+getFeed(null, 3) →
+  Start from 0 →
+  Take 3 items: [{id:1}, {id:2}, {id:3}] →
+  Next cursor: 3
+
+getFeed(2, 2) →
+  Find item with id=2 (index 1) →
+  Start from index 2 →
+  Take 2 items: [{id:3}, {id:4}] →
+  Next cursor: 4
+\`\`\`
+
+**Key Benefits:**
+- **Fast**: O(1) lookup using index
+- **Stable**: New items don't affect pagination
+- **Scalable**: Works for millions of items`,
     initialCode: `const db = [
   { id: 1, content: 'A' },
   { id: 2, content: 'B' },
@@ -717,14 +857,68 @@ function solution({ cursor, limit }) {
     pLevel: 'p1',
     category: 'core',
     expectedTime: '25m',
-    description: `**Scenario:** We have a mix of "Admins", "Editors", and "Viewers". We need a central middleware to enforce permissions so we don't have \`if (user.role === 'admin')\` scattered everywhere.
+    description: `### **Understanding Role-Based Access Control (RBAC)**
 
-**Task:** Implement \`checkPermission(user, resource, action)\`.
-- Policies:
-  - Admin: Allow everything.
-  - Editor: Allow 'read'/'write' on 'articles'.
-  - Viewer: Allow 'read' only.
-- Return \`true\` or \`false\`.`,
+Instead of checking permissions everywhere in code, centralize authorization logic in one place. This makes it easier to:
+- **Update policies**: Change permissions in one place
+- **Audit access**: Track who can do what
+- **Test**: Verify authorization logic
+
+---
+
+### **The Permission Matrix**
+
+| Role   | Articles (read) | Articles (write) | Users (delete) |
+|--------|----------------|------------------|----------------|
+| Admin  | ✅             | ✅               | ✅             |
+| Editor | ✅             | ✅               | ❌             |
+| Viewer | ✅             | ❌               | ❌             |
+
+---
+
+### **Implementation**
+
+**Method: \`checkPermission(user, resource, action)\`**
+
+**What You Need to Do:**
+
+1. **Check Role**:
+   - Get user's role: \`user.role\`
+
+2. **Admin Check**:
+   - If role is \`'admin'\`, return \`true\` (admins can do everything)
+
+3. **Editor Permissions**:
+   - If role is \`'editor'\`:
+     - Allow \`'read'\` and \`'write'\` on \`'articles'\`
+     - Deny everything else
+
+4. **Viewer Permissions**:
+   - If role is \`'viewer'\`:
+     - Allow only \`'read'\` on \`'articles'\`
+     - Deny everything else
+
+**Implementation:**
+\`\`\`javascript
+function checkPermission(user, resource, action) {
+  if (user.role === 'admin') return true;
+  
+  if (user.role === 'editor') {
+    return resource === 'articles' && (action === 'read' || action === 'write');
+  }
+  
+  if (user.role === 'viewer') {
+    return resource === 'articles' && action === 'read';
+  }
+  
+  return false; // Unknown role
+}
+\`\`\`
+
+**Why This Pattern:**
+- **Centralized**: All permission logic in one place
+- **Maintainable**: Easy to add new roles or permissions
+- **Testable**: Can test all permission combinations`,
     initialCode: `function solution({ user, resource, action }) {
   return false;
 }`,
@@ -758,13 +952,62 @@ function solution({ cursor, limit }) {
     pLevel: 'p2',
     category: 'core',
     expectedTime: '30m',
-    description: `**Scenario:** If a client's network fails after sending a payment request, they retry. Without Idempotency, we might charge them twice.
+    description: `### **Understanding Idempotency**
 
-**Task:** Implement \`processRequest(req)\`.
-- \`req\` contains \`idempotencyKey\`.
-- If key is seen for the first time: Process it (return "processed"), store result.
-- If key was seen before: Return the *cached* result immediately (do not process again).
-- Use a local object or \`system.cache\` to store keys.`,
+**The Problem:**
+- Client sends payment request
+- Network fails before response arrives
+- Client retries with same request
+- Without idempotency: **Double charge!** ❌
+
+**The Solution:**
+- Client sends unique \`idempotencyKey\` with each request
+- Server caches the result by key
+- If same key arrives again → return cached result (don't process again)
+
+---
+
+### **The Implementation**
+
+**Method: \`processRequest(req)\`**
+
+**What You Need to Do:**
+
+1. **Check Cache**:
+   - Look up \`req.idempotencyKey\` in cache/store
+   - If found → return cached result immediately
+
+2. **Process Request**:
+   - If key not found, process the request
+   - Generate result (e.g., \`"processed"\`)
+
+3. **Cache Result**:
+   - Store result in cache: \`cache[idempotencyKey] = result\`
+   - Return the result
+
+**Important:**
+- **Same key, different data**: Still return cached result (idempotency key takes precedence)
+- **Cache storage**: Use \`seen\` object or \`system.cache\`
+
+**Example:**
+\`\`\`javascript
+// First request
+processRequest({idempotencyKey: 'k1', data: 'charge'}) →
+  Key 'k1' not in cache →
+  Process → result = "processed" →
+  Cache: seen['k1'] = "processed" →
+  Return: "processed"
+
+// Retry (same key)
+processRequest({idempotencyKey: 'k1', data: 'charge'}) →
+  Key 'k1' in cache →
+  Return cached: "processed" (no double processing!)
+\`\`\`
+
+**Why This Matters:**
+- **Prevents Duplicate Charges**: Same request = same result
+- **Network Resilience**: Handles retries gracefully
+- **User Trust**: Users aren't charged multiple times`,
     initialCode: `function solution(requests) {
   const seen = {}; // In-memory store for this batch
 
@@ -827,13 +1070,68 @@ function solution({ cursor, limit }) {
     pLevel: 'p2',
     category: 'core',
     expectedTime: '35m',
-    description: `**Scenario:** We need to smooth out bursty traffic to our API. The "Leaky Bucket" algorithm allows requests to queue up but processes them at a constant rate.
+    description: `### **Understanding Leaky Bucket Algorithm**
 
-**Task:** Implement a class \`LeakyBucket\`.
-- \`capacity\`: Max requests the bucket can hold.
-- \`leakRate\`: Requests processed per second (simulated).
-- \`addRequest()\`: Returns \`true\` if added to bucket, \`false\` if bucket is full (dropped).
-- \`tick()\`: Removes requests from the bucket based on leak rate. Return number of leaked items.`,
+**The Problem:**
+- Traffic arrives in **bursts** (sudden spikes)
+- Processing bursts can overwhelm the system
+- Need to **smooth out** the traffic
+
+**The Solution: Leaky Bucket**
+- Requests queue up in a "bucket" (up to capacity)
+- Bucket "leaks" at a constant rate (processes requests steadily)
+- Converts bursty input into smooth, constant output
+
+**Analogy:**
+- Think of a bucket with a small hole at the bottom
+- Water (requests) pours in quickly
+- Water leaks out at constant rate
+- If bucket fills up, excess water is lost (requests dropped)
+
+---
+
+### **Implementation**
+
+**Class: \`LeakyBucket\`**
+
+**Properties:**
+- \`capacity\`: Maximum requests bucket can hold
+- \`leakRate\`: Requests processed per tick
+- \`current\`: Current number of requests in bucket
+
+**Method 1: \`addRequest()\`**
+
+1. **Check Capacity**:
+   - If \`current >= capacity\`, bucket is full
+   - Return \`false\` (request dropped)
+
+2. **Add to Bucket**:
+   - Increment \`current\`
+   - Return \`true\` (request queued)
+
+**Method 2: \`tick()\`**
+
+1. **Calculate Leak Amount**:
+   - Leak up to \`leakRate\` requests
+   - But can't leak more than \`current\` (what's in bucket)
+
+2. **Update Bucket**:
+   - Subtract leaked amount from \`current\`
+   - Return number of requests leaked
+
+**Example:**
+\`\`\`javascript
+// capacity=10, leakRate=2
+bucket.addRequest() → current=1, return true
+bucket.addRequest() → current=2, return true
+bucket.tick() → leak 2, current=0, return 2
+bucket.addRequest() → current=1, return true
+\`\`\`
+
+**Why This Works:**
+- **Smooths Traffic**: Bursts are buffered, processed steadily
+- **Protects System**: Prevents overwhelming the backend
+- **Predictable**: Constant processing rate`,
     initialCode: `class LeakyBucket {
   constructor(capacity, leakRate) {
     this.capacity = capacity;
@@ -903,12 +1201,96 @@ function solution(actions) {
     pLevel: 'p2',
     category: 'core',
     expectedTime: '40m',
-    description: `**Scenario:** We have a build system where tasks depend on others (e.g., 'build' depends on 'lint' and 'test'). We need to determine the execution order.
+    description: `### **Understanding Topological Sort**
 
-**Task:** Implement \`schedule(tasks)\`.
-- Input: \`{ 'build': ['lint', 'test'], 'lint': [], 'test': [] }\`.
-- Output: Array of tasks in valid topological order (e.g., \`['lint', 'test', 'build']\`).
-- If a cycle is detected (A -> B -> A), return \`"cycle"\`.`,
+**The Problem:**
+- Tasks have dependencies (build depends on lint and test)
+- Need to find execution order where dependencies run first
+- If there's a cycle (A→B→A), it's impossible
+
+**The Solution: Topological Sort**
+- Order nodes in a directed graph such that dependencies come before dependents
+- Used in: build systems (Make, Webpack), package managers (npm, pip)
+
+---
+
+### **The Algorithm**
+
+**Kahn's Algorithm (BFS-based):**
+
+1. **Calculate In-Degree**:
+   - Count how many dependencies each task has
+   - Tasks with in-degree 0 can run immediately
+
+2. **Process Queue**:
+   - Start with tasks that have no dependencies (in-degree 0)
+   - Add them to result
+   - For each completed task, reduce in-degree of its dependents
+   - Add new tasks with in-degree 0 to queue
+
+3. **Check for Cycles**:
+   - If we can't process all tasks → cycle exists
+   - Return \`"cycle"\`
+
+**Example:**
+\`\`\`javascript
+// { 'build': ['lint', 'test'], 'lint': [], 'test': [] }
+schedule(tasks) →
+  In-degrees: {lint: 0, test: 0, build: 2}
+  Queue: [lint, test] (in-degree 0)
+  Process lint → result: [lint], reduce build's in-degree to 1
+  Process test → result: [lint, test], reduce build's in-degree to 0
+  Process build → result: [lint, test, build]
+  Return: ['lint', 'test', 'build']
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+function schedule(tasks) {
+  const inDegree = {};
+  const graph = {};
+  
+  // Build graph and calculate in-degrees
+  for (const [task, deps] of Object.entries(tasks)) {
+    inDegree[task] = deps.length;
+    for (const dep of deps) {
+      if (!graph[dep]) graph[dep] = [];
+      graph[dep].push(task);
+    }
+  }
+  
+  // BFS: Start with tasks having no dependencies
+  const queue = Object.keys(tasks).filter(t => inDegree[t] === 0);
+  const result = [];
+  
+  while (queue.length > 0) {
+    const task = queue.shift();
+    result.push(task);
+    
+    // Reduce in-degree of dependents
+    if (graph[task]) {
+      for (const dependent of graph[task]) {
+        inDegree[dependent]--;
+        if (inDegree[dependent] === 0) {
+          queue.push(dependent);
+        }
+      }
+    }
+  }
+  
+  // Check for cycle
+  if (result.length !== Object.keys(tasks).length) {
+    return "cycle";
+  }
+  
+  return result;
+}
+\`\`\`
+
+**Why This Matters:**
+- **Build Systems**: Determines compilation order
+- **Package Managers**: Resolves dependency installation order
+- **Task Scheduling**: Optimizes execution order`,
     initialCode: `function solution(tasks) {
   // Topological Sort
   return [];
@@ -952,12 +1334,79 @@ function solution(actions) {
     pLevel: 'p2',
     category: 'core',
     expectedTime: '35m',
-    description: `**Scenario:** A messaging system needs to support wildcard subscriptions.
-- \`subscribe('user.*')\` should match \`publish('user.created')\` and \`publish('user.deleted')\`.
+    description: `### **Understanding Pub/Sub with Wildcards**
 
-**Task:** Implement \`PubSub\`.
-- \`subscribe(pattern, callback)\`
-- \`publish(topic, message)\` -> triggers all matching callbacks.`,
+**The Problem:**
+- You want to subscribe to multiple related topics
+- Instead of: \`subscribe('user.created')\`, \`subscribe('user.deleted')\`, etc.
+- Use wildcards: \`subscribe('user.*')\` matches all user events
+
+**Wildcard Pattern:**
+- \`*\` matches any single segment
+- \`user.*\` matches: \`user.created\`, \`user.deleted\`, \`user.updated\`
+- \`user.*\` does NOT match: \`user.profile.name\` (only one level)
+
+---
+
+### **Implementation**
+
+**Method 1: \`subscribe(pattern, callback)\`**
+
+1. **Store Subscription**:
+   - Store pattern and callback in \`subscribers\` array
+   - Format: \`{pattern: 'user.*', callback: fn}\`
+
+**Method 2: \`publish(topic, message)\`**
+
+1. **Find Matching Subscriptions**:
+   - For each subscriber, check if pattern matches topic
+   - Pattern matching: Convert \`'user.*'\` to regex or compare segments
+
+2. **Pattern Matching Logic**:
+   - Split pattern and topic by \`'.'\`
+   - Compare segments:
+     - If pattern segment is \`'*'\`, it matches any topic segment
+     - If segments are equal, they match
+     - All segments must match
+
+3. **Trigger Callbacks**:
+   - For each matching subscription, call the callback with message
+
+**Example:**
+\`\`\`javascript
+subscribe('user.*', callback1)
+subscribe('order.*', callback2)
+
+publish('user.created', 'data') →
+  'user.*' matches 'user.created'? Yes →
+  Call callback1('data')
+
+publish('order.paid', 'data') →
+  'order.*' matches 'order.paid'? Yes →
+  Call callback2('data')
+\`\`\`
+
+**Pattern Matching Implementation:**
+\`\`\`javascript
+function matches(pattern, topic) {
+  const patternParts = pattern.split('.');
+  const topicParts = topic.split('.');
+  
+  if (patternParts.length !== topicParts.length) return false;
+  
+  for (let i = 0; i < patternParts.length; i++) {
+    if (patternParts[i] !== '*' && patternParts[i] !== topicParts[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+\`\`\`
+
+**Why This is Useful:**
+- **Event Routing**: Route events to multiple handlers
+- **Flexibility**: Subscribe to event categories
+- **Real-World**: Used in MQTT, Redis Pub/Sub, message queues`,
     initialCode: `class PubSub {
   constructor() {
     this.subscribers = [];
@@ -1081,9 +1530,56 @@ function solution(ops) {
     pLevel: 'p1',
     category: 'systems',
     expectedTime: '30m',
-    description: `**Scenario:** We have 3 backend servers. Currently, we send all traffic to Server 1 until it crashes. We need a smarter distribution strategy.
+    description: `### **Understanding Load Balancing**
 
-**Task:** Implement a "Weighted Round Robin" load balancer. It should distribute incoming requests across the node pool based on a simple rotation, or optionally based on server capacity (weights).`,
+**The Problem:**
+- Single server receives all traffic → overloads and crashes
+- Need to distribute requests across multiple servers
+- Balance the load to prevent any server from being overwhelmed
+
+**The Solution: Round Robin**
+- Distribute requests in rotation: Server 1 → Server 2 → Server 3 → Server 1 → ...
+- Simple, fair distribution
+- Each server gets equal share of traffic
+
+---
+
+### **Implementation**
+
+**Class: \`LoadBalancer\`**
+
+**Properties:**
+- \`servers\`: Array of server names (e.g., \`["node-1", "node-2", "node-3"]\`)
+- \`current\`: Index of current server (starts at 0)
+
+**Method: \`getNext()\`**
+
+1. **Get Current Server**:
+   - Return \`servers[current]\`
+
+2. **Advance to Next**:
+   - Increment \`current\`
+   - Wrap around: \`current = (current + 1) % servers.length\`
+   - This ensures rotation cycles through all servers
+
+**Example:**
+\`\`\`javascript
+// servers = ["node-1", "node-2", "node-3"]
+getNext() → return "node-1", current = 1
+getNext() → return "node-2", current = 2
+getNext() → return "node-3", current = 0 (wrapped)
+getNext() → return "node-1", current = 1
+\`\`\`
+
+**Why This Works:**
+- **Fair Distribution**: Each server gets equal requests
+- **Simple**: Easy to implement and understand
+- **Stateless**: No need to track server load
+
+**Real-World Enhancements:**
+- **Weighted Round Robin**: Send more traffic to powerful servers
+- **Least Connections**: Route to server with fewest active connections
+- **Health Checks**: Skip unhealthy servers`,
     initialCode: `class LoadBalancer {
   constructor() {
      this.servers = ["node-1", "node-2", "node-3"];
@@ -1134,9 +1630,63 @@ function solution(requests) {
     pLevel: 'p1',
     category: 'systems',
     expectedTime: '35m',
-    description: `**Scenario:** Sending emails is slow. If we send them during the user's HTTP request, the page hangs. We need to offload this to a background worker.
+    description: `### **Understanding Async Job Processing**
 
-**Task:** Implement a worker that continuously polls a job queue. When a job appears (e.g., "send_email"), process it asynchronously. Ensure that if processing fails, the job is not lost (simulating retry logic is a plus).`,
+**The Problem:**
+- Sending emails takes 2-5 seconds
+- If done during HTTP request → user waits → bad UX
+- Need to process jobs **asynchronously** in background
+
+**The Solution: Job Queue + Worker**
+- **Producer**: HTTP handler enqueues job (returns immediately)
+- **Consumer**: Background worker polls queue and processes jobs
+- **Decoupling**: Request doesn't wait for slow operations
+
+---
+
+### **Implementation**
+
+**Queue Operations:**
+- \`enqueue(job)\`: Add job to queue
+- \`tick\`: Process one job from queue (simulates worker polling)
+
+**What You Need to Do:**
+
+1. **Maintain Queue**:
+   - Array to store jobs: \`queue = []\`
+
+2. **Enqueue Operation**:
+   - When \`cmd.type === 'enqueue'\`:
+     - Push job to queue: \`queue.push(cmd.job)\`
+
+3. **Process Operation (tick)**:
+   - When \`cmd.type === 'tick'\`:
+     - Check if queue has jobs
+     - If queue empty, do nothing
+     - If queue has jobs:
+       - Remove job from front: \`queue.shift()\`
+       - Process it: \`processed.push(job + "-done")\`
+
+**Example:**
+\`\`\`javascript
+// Enqueue jobs
+enqueue('email1') → queue = ['email1']
+enqueue('email2') → queue = ['email1', 'email2']
+
+// Process jobs
+tick() → process 'email1', queue = ['email2'], processed = ['email1-done']
+tick() → process 'email2', queue = [], processed = ['email1-done', 'email2-done']
+\`\`\`
+
+**Why This Pattern:**
+- **Fast Response**: HTTP handler returns immediately
+- **Reliability**: Jobs persist in queue (won't be lost)
+- **Scalability**: Can have multiple workers processing in parallel
+
+**Real-World Enhancements:**
+- **Retry Logic**: Retry failed jobs
+- **Priority Queues**: Process important jobs first
+- **Job Status**: Track job state (pending, processing, completed)`,
     initialCode: `async function solution(commands) {
   const queue = [];
   const processed = [];
@@ -1209,9 +1759,76 @@ function solution(requests) {
     pLevel: 'p1',
     category: 'systems',
     expectedTime: '30m',
-    description: `**Scenario:** Our User Profile service is read-heavy (90% reads). We want to add a caching layer. However, we must ensure that when a user updates their profile, the cache doesn't serve stale data.
+    description: `### **Understanding Caching Strategies**
 
-**Task:** Implement a "Write-Through" strategy: When writing data, update *both* the DB and the Cache. When reading, check Cache first; if missing (cache miss), load from DB and populate Cache ("Read-Aside").`,
+**The Problem:**
+- Database reads are slow (disk I/O)
+- 90% of requests are reads
+- Need to speed up reads without serving stale data
+
+**The Solution: Write-Through Cache**
+- **Write**: Update both DB and Cache simultaneously
+- **Read**: Check cache first, if miss → load from DB and cache it
+
+**Why Write-Through:**
+- **Consistency**: Cache always matches DB (no stale data)
+- **Fast Reads**: Cache hits are much faster than DB reads
+- **Trade-off**: Writes are slower (must update both)
+
+---
+
+### **Implementation**
+
+**Class: \`System\`**
+
+**Properties:**
+- \`db\`: Database storage (object)
+- \`cache\`: Cache storage (object)
+
+**Method 1: \`read(id)\` (Read-Aside Pattern)**
+
+1. **Check Cache**:
+   - If \`cache[id]\` exists → return it (cache hit)
+
+2. **Cache Miss**:
+   - If not in cache → read from DB: \`db[id]\`
+   - If found in DB:
+     - Store in cache: \`cache[id] = db[id]\`
+     - Return value
+   - If not in DB → return \`null\`
+
+**Method 2: \`write(id, data)\` (Write-Through Pattern)**
+
+1. **Update Database**:
+   - \`db[id] = data\`
+
+2. **Update Cache**:
+   - \`cache[id] = data\`
+   - This ensures cache stays in sync
+
+3. **Return Confirmation**:
+   - Return \`"written"\`
+
+**Example:**
+\`\`\`javascript
+// Write
+write(1, 'v1') → db[1] = 'v1', cache[1] = 'v1', return "written"
+
+// Read (cache hit)
+read(1) → cache[1] exists → return 'v1'
+
+// Read (cache miss)
+read(2) → cache[2] missing → db[2] = 'v2' → cache[2] = 'v2' → return 'v2'
+\`\`\`
+
+**Why This Works:**
+- **Fast Reads**: Cache hits are O(1)
+- **Consistency**: Write-through ensures cache matches DB
+- **Automatic Population**: Cache fills on reads (read-aside)
+
+**Trade-offs:**
+- **Write Performance**: Slower (must update both)
+- **Memory**: Cache uses RAM (limited capacity)`,
     initialCode: `class System {
   constructor() {
     this.db = {};
@@ -1284,9 +1901,161 @@ function solution(ops) {
     pLevel: 'p2',
     category: 'systems',
     expectedTime: '45m',
-    description: `**Scenario:** Our application relies on a third-party "Payment Gateway" API. Sometimes this API goes down or becomes extremely slow. When this happens, our threads pile up waiting for it, eventually crashing *our* server (Cascading Failure).
+    description: `### **Introduction**
 
-**Task:** Implement a Circuit Breaker. It should wrap the API calls. If failures exceed a threshold, the breaker "trips" (OPEN state) and immediately fails subsequent calls without hitting the external API, allowing the system to recover. After a timeout, it tries again (HALF-OPEN).`,
+Our application relies on a third-party "Payment Gateway" API. Sometimes this API goes down or becomes extremely slow. When this happens, our threads pile up waiting for it, eventually crashing *our* server (Cascading Failure).
+
+**The Problem: Cascading Failures**
+- External API is slow/down
+- Our threads wait for responses
+- Thread pool exhausts
+- Our server crashes even though the issue is external
+
+**The Solution: Circuit Breaker Pattern**
+A circuit breaker monitors API calls and "trips" (opens) when failures exceed a threshold. Once open, it immediately fails requests without calling the API, allowing the system to recover.
+
+---
+
+### **Understanding Circuit Breaker States**
+
+**Three States:**
+
+1. **CLOSED (Normal)**:
+   - Circuit is closed, requests flow through normally
+   - Monitor success/failure rates
+   - If failures exceed threshold → transition to OPEN
+
+2. **OPEN (Failing)**:
+   - Circuit is open, requests fail immediately
+   - Don't call the external API (save resources)
+   - After a timeout period → transition to HALF-OPEN
+
+3. **HALF-OPEN (Testing)**:
+   - Allow a few requests through to test if API recovered
+   - If successful → transition to CLOSED
+   - If failed → transition back to OPEN
+
+---
+
+### **Implementation Requirements**
+
+**Your \`solution(calls)\` function receives:**
+- \`calls\`: An array of booleans representing API call results
+  - \`true\` = API call succeeded
+  - \`false\` = API call failed
+
+**What You Need to Do:**
+
+1. **Track State**:
+   - Maintain current state: CLOSED, OPEN, or HALF-OPEN
+   - Track failure count (for CLOSED state)
+   - Track timeout/cooldown period (for OPEN state)
+
+2. **Process Each Call**:
+   - **CLOSED State**: 
+     - Execute the call (use the boolean value)
+     - If fails, increment failure count
+     - If failures >= threshold (e.g., 2), transition to OPEN
+     - Return "success" or "fail" based on result
+   
+   - **OPEN State**:
+     - Don't execute the call
+     - Immediately return "fail"
+     - After timeout period, transition to HALF-OPEN
+   
+   - **HALF-OPEN State**:
+     - Allow the call through (test if API recovered)
+     - If succeeds → transition to CLOSED, reset failure count
+     - If fails → transition back to OPEN
+     - Return "success" or "fail" based on result
+
+3. **Return Results**:
+   - Return an array of strings: \`["success", "fail", ...]\`
+   - Each string corresponds to the result of processing that call
+
+---
+
+### **Example Flow**
+
+\`\`\`javascript
+// Threshold: 2 failures, Timeout: 3 calls
+
+solution([true, true, false, false, true]) →
+  Call 1 (CLOSED): true → "success", failures=0
+  Call 2 (CLOSED): true → "success", failures=0
+  Call 3 (CLOSED): false → "fail", failures=1
+  Call 4 (CLOSED): false → "fail", failures=2 → OPEN!
+  Call 5 (OPEN): immediately "fail" (no API call)
+  
+  Result: ["success", "success", "fail", "fail", "fail"]
+\`\`\`
+
+**Simplified Implementation:**
+\`\`\`javascript
+function solution(calls) {
+  const FAILURE_THRESHOLD = 2;
+  const TIMEOUT = 3; // Number of calls to wait in OPEN state
+  
+  let state = 'CLOSED';
+  let failureCount = 0;
+  let openCallCount = 0;
+  const results = [];
+  
+  for (const callResult of calls) {
+    if (state === 'CLOSED') {
+      if (callResult) {
+        results.push("success");
+        failureCount = 0; // Reset on success
+      } else {
+        results.push("fail");
+        failureCount++;
+        if (failureCount >= FAILURE_THRESHOLD) {
+          state = 'OPEN';
+          openCallCount = 0;
+        }
+      }
+    } else if (state === 'OPEN') {
+      results.push("fail"); // Immediately fail
+      openCallCount++;
+      if (openCallCount >= TIMEOUT) {
+        state = 'HALF_OPEN';
+      }
+    } else if (state === 'HALF_OPEN') {
+      if (callResult) {
+        results.push("success");
+        state = 'CLOSED';
+        failureCount = 0;
+      } else {
+        results.push("fail");
+        state = 'OPEN';
+        openCallCount = 0;
+      }
+    }
+  }
+  
+  return results;
+}
+\`\`\`
+
+---
+
+### **Edge Cases**
+
+- **All Successes**: Circuit stays CLOSED, all return "success"
+- **All Failures**: Circuit opens quickly, then all return "fail"
+- **Mixed**: Circuit opens when threshold reached, then tests recovery
+
+**Why This Pattern Works:**
+- **Prevents Cascading Failures**: Stops calling failing API
+- **Fast Failure**: Immediate response when circuit is open
+- **Self-Recovery**: Automatically tests if API recovered
+- **Resource Protection**: Saves threads, network calls, etc.
+
+**Real-World Usage:**
+- Microservices communication
+- External API calls
+- Database connection handling
+- Any external dependency that can fail`,
     initialCode: `function solution(calls) { return []; }`,
     testCases: [
       { input: [false], expected: ["fail"] },
@@ -1318,11 +2087,190 @@ function solution(ops) {
     pLevel: 'p2',
     category: 'systems',
     expectedTime: '40m',
-    description: `**Scenario:** We have two background workers running on different servers. Both wake up at midnight to generate the "Daily Report". If they both run, we charge the client twice. We need to ensure *mutually exclusive* access.
+    description: `### **Introduction**
 
-**Task:** Simulate a Distributed Lock using a shared key-value store (like Redis).
-1. \`acquireLock(resource, ttl)\`: Try to set a key if it doesn't exist.
-2. \`releaseLock(resource, token)\`: Delete the key *only if* the value matches your token (preventing accidental release of someone else's lock).`,
+We have two background workers running on different servers. Both wake up at midnight to generate the "Daily Report". If they both run, we charge the client twice. We need to ensure *mutually exclusive* access.
+
+**The Problem: Race Conditions**
+- Multiple processes try to do the same work
+- Without coordination, they all execute
+- Results in duplicate work, double charging, data corruption
+
+**The Solution: Distributed Lock**
+A distributed lock ensures only one process can acquire a lock at a time, even across multiple servers. It's like a mutex, but for distributed systems.
+
+---
+
+### **Understanding Distributed Locks**
+
+**Key Concepts:**
+
+1. **Lock Acquisition**:
+   - Try to set a key in shared storage (Redis, database, etc.)
+   - Use "set if not exists" (atomic operation)
+   - If key doesn't exist → lock acquired
+   - If key exists → lock already held by someone else
+
+2. **Lock Token**:
+   - Each lock has a unique token (random value)
+   - Prevents accidental release of someone else's lock
+   - Only the process that acquired the lock can release it
+
+3. **TTL (Time To Live)**:
+   - Locks expire automatically after TTL
+   - Prevents deadlocks if process crashes while holding lock
+   - Safety mechanism
+
+---
+
+### **Method 1: \`acquireLock(resource, ttl)\`**
+
+**Parameters:**
+- \`resource\`: The resource name to lock (e.g., \`"A"\`, \`"daily_report"\`)
+- \`ttl\`: Time to live in seconds (e.g., \`10\`)
+
+**What You Need to Do:**
+
+1. **Check if Lock Exists**:
+   - Use \`system.cache.get(resource)\` to check if lock already exists
+   - If it exists, return \`false\` (lock already held)
+
+2. **Generate Unique Token**:
+   - Create a unique token (e.g., random string, UUID)
+   - Example: \`const token = "my-unique-token-" + Math.random()\`
+   - This token identifies this process as the lock owner
+
+3. **Set Lock with Token**:
+   - Use \`system.cache.set(resource, token, ttl)\` to set the lock
+   - Store the token as the value
+   - TTL ensures lock expires automatically
+
+4. **Return Result**:
+   - Return \`true\` if lock was acquired
+   - Return \`false\` if lock already exists
+
+**Example:**
+\`\`\`javascript
+// First process
+acquireLock('A', 10) →
+  system.cache.get('A') = null (doesn't exist) →
+  token = "token-123" →
+  system.cache.set('A', "token-123", 10) →
+  return true ✅
+
+// Second process (tries immediately)
+acquireLock('A', 10) →
+  system.cache.get('A') = "token-123" (exists!) →
+  return false ❌
+\`\`\`
+
+---
+
+### **Method 2: \`releaseLock(resource, token)\`**
+
+**Parameters:**
+- \`resource\`: The resource name to unlock
+- \`token\`: The token that was returned when lock was acquired
+
+**What You Need to Do:**
+
+1. **Get Current Lock Value**:
+   - Use \`system.cache.get(resource)\` to get the current token
+
+2. **Verify Token Matches**:
+   - Compare current token with provided token
+   - If they match → this process owns the lock, safe to release
+   - If they don't match → someone else's lock, don't release!
+
+3. **Delete Lock**:
+   - If tokens match, use \`system.cache.delete(resource)\` to release
+   - Return \`true\` if released successfully
+   - Return \`false\` if token didn't match (or lock doesn't exist)
+
+**Why Token Verification is Critical:**
+- Process A acquires lock with token "abc"
+- Process A takes longer than TTL, lock expires
+- Process B acquires lock with token "xyz"
+- Process A finishes and tries to release
+- Without token check: Process A would release Process B's lock! ❌
+- With token check: Process A sees token mismatch, doesn't release ✅
+
+**Example:**
+\`\`\`javascript
+// Process 1 acquired lock
+acquireLock('A', 10) → token = "token-123", return true
+
+// Process 1 releases lock
+releaseLock('A', "token-123") →
+  system.cache.get('A') = "token-123" →
+  Tokens match! →
+  system.cache.delete('A') →
+  return true ✅
+
+// Process 2 tries to release (doesn't own lock)
+releaseLock('A', "wrong-token") →
+  system.cache.get('A') = null (already released) →
+  return false ❌
+\`\`\`
+
+---
+
+### **Complete Implementation**
+
+\`\`\`javascript
+async function solution(ops) {
+  const results = [];
+  const token = "my-unique-token"; // In real system, generate unique per process
+  
+  for (const op of ops) {
+    if (op.type === 'acquire') {
+      // Check if lock exists
+      const existing = system.cache.get(op.res);
+      if (existing) {
+        results.push(false); // Lock already held
+      } else {
+        // Set lock with token
+        system.cache.set(op.res, token, op.ttl);
+        results.push(true); // Lock acquired
+      }
+    } else if (op.type === 'release') {
+      // Get current lock value
+      const current = system.cache.get(op.res);
+      if (current === token) {
+        // Token matches, safe to release
+        system.cache.delete(op.res);
+        results.push(true);
+      } else {
+        // Token doesn't match or lock doesn't exist
+        results.push(false);
+      }
+    }
+  }
+  
+  return results;
+}
+\`\`\`
+
+---
+
+### **Edge Cases**
+
+- **Lock Already Exists**: Return false, don't overwrite
+- **Token Mismatch**: Return false, don't release someone else's lock
+- **Lock Doesn't Exist on Release**: Return false (already released or never existed)
+- **TTL Expires**: Lock automatically released, next acquire will succeed
+
+**Why This Pattern is Essential:**
+- **Mutual Exclusion**: Only one process can hold lock
+- **Safety**: Token prevents accidental release
+- **Resilience**: TTL prevents deadlocks
+- **Distributed**: Works across multiple servers
+
+**Real-World Usage:**
+- Scheduled job coordination
+- Critical section protection
+- Resource access control
+- Leader election`,
     initialCode: `async function solution(ops) {
   const results = [];
   const token = "my-unique-token"; // Simulate this client's token
@@ -1379,8 +2327,118 @@ function solution(ops) {
         id: 'step1',
         title: 'Inventory Service',
         fileName: 'InventoryService.js',
-        description: `**Task:** Implement the Inventory Microservice.
-It needs methods to \`reserve(itemId, qty)\` (check stock, decrement) and \`release(itemId, qty)\` (compensation logic: increment stock back).`,
+        description: `### **Understanding the Inventory Service**
+
+In a microservices architecture, the Inventory Service is responsible for managing product stock. It must handle:
+- **Reserving** stock when an order is placed
+- **Releasing** stock if the order fails (compensation)
+
+**Why Compensation is Needed:**
+- In distributed systems, you can't use a single database transaction across services
+- If Payment fails after Inventory reserves stock, the stock must be released
+- This is the "undo" operation in the Saga pattern
+
+---
+
+### **Method 1: \`reserve(itemId, qty)\`**
+
+**Parameters:**
+- \`itemId\`: The identifier of the item to reserve (e.g., \`"item_1"\`)
+- \`qty\`: The quantity to reserve (e.g., \`5\`)
+
+**What You Need to Do:**
+
+1. **Check Current Stock**:
+   - Look up the item in the \`db\` object: \`const currentStock = db[itemId]\`
+   - If the item doesn't exist, you might want to handle this (return false or throw error)
+
+2. **Check Availability**:
+   - Compare \`currentStock >= qty\`
+   - If not enough stock, return \`false\` (reservation failed)
+
+3. **Decrement Stock**:
+   - If enough stock exists, subtract the quantity: \`db[itemId] = currentStock - qty\`
+   - This "reserves" the stock (makes it unavailable for other orders)
+
+4. **Return Success**:
+   - Return \`true\` to indicate the reservation was successful
+
+**Edge Cases:**
+- What if \`qty\` is 0 or negative? (Handle gracefully - maybe return false)
+- What if item doesn't exist in db? (Return false or initialize to 0)
+- What if stock becomes negative? (Prevent this - check before decrementing)
+
+**Example:**
+\`\`\`javascript
+// Initial: db = { "item_1": 10 }
+reserve('item_1', 5) → 
+  Check: 10 >= 5? Yes →
+  Decrement: db['item_1'] = 10 - 5 = 5 →
+  Return: true
+
+// Now: db = { "item_1": 5 }
+reserve('item_1', 7) → 
+  Check: 5 >= 7? No →
+  Return: false (insufficient stock)
+\`\`\`
+
+---
+
+### **Method 2: \`release(itemId, qty)\`**
+
+**Parameters:**
+- \`itemId\`: The identifier of the item to release
+- \`qty\`: The quantity to release back to stock
+
+**What You Need to Do:**
+
+1. **Get Current Stock**:
+   - Look up the item: \`const currentStock = db[itemId] || 0\`
+   - Use \`|| 0\` to handle items that might not exist
+
+2. **Increment Stock**:
+   - Add the quantity back: \`db[itemId] = currentStock + qty\`
+   - This "releases" the reserved stock back into available inventory
+
+3. **Return** (optional):
+   - You might return the new stock level or just \`true\`
+
+**Why This is Compensation:**
+- This method "undoes" a previous \`reserve\` call
+- If Payment fails, we call \`release\` to give the stock back
+- This ensures the system remains consistent even when transactions fail
+
+**Example:**
+\`\`\`javascript
+// Current: db = { "item_1": 5 } (after reserving 5)
+release('item_1', 5) → 
+  Increment: db['item_1'] = 5 + 5 = 10 →
+  Stock is back to original amount
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+const db = { "item_1": 10 };
+
+module.exports = {
+  async reserve(itemId, qty) {
+    const stock = db[itemId] || 0;
+    if (stock < qty) return false;
+    db[itemId] = stock - qty;
+    return true;
+  },
+  
+  async release(itemId, qty) {
+    db[itemId] = (db[itemId] || 0) + qty;
+  }
+};
+\`\`\`
+
+**Why This Matters:**
+- **Atomicity**: Each operation is atomic within the service
+- **Compensatable**: Can undo reservations if needed
+- **Isolated**: Each service manages its own data
+- **Consistent**: Stock never goes negative (if implemented correctly)`,
         initialCode: `const db = { "item_1": 10 };
 module.exports = {
   async reserve(itemId, qty) { return false; },
@@ -1394,8 +2452,114 @@ module.exports = {
         id: 'step2',
         title: 'Payment Service',
         fileName: 'PaymentService.js',
-        description: `**Task:** Implement the Payment Microservice.
-It needs a \`charge(userId, amount)\` method. For simulation, assume it succeeds mostly but can fail. Also implement \`refund\` for compensation.`,
+        description: `### **Understanding the Payment Service**
+
+The Payment Service handles financial transactions. It must:
+- **Charge** a user's payment method when an order is placed
+- **Refund** the charge if the order fails (compensation)
+
+**Why Refunds are Needed:**
+- If Inventory reservation succeeds but something else fails, we need to refund
+- This ensures users aren't charged for orders that don't complete
+- Part of the Saga pattern's compensation logic
+
+---
+
+### **Method 1: \`charge(userId, amount)\`**
+
+**Parameters:**
+- \`userId\`: The identifier of the user being charged (e.g., \`"u1"\`)
+- \`amount\`: The amount to charge (e.g., \`50\`)
+
+**What You Need to Do:**
+
+1. **Simulate Payment Processing**:
+   - In a real system, this would call a payment gateway (Stripe, PayPal, etc.)
+   - For this simulation, you can:
+     - Always return \`"success"\` (simple case)
+     - Or add logic to randomly fail (for testing compensation)
+     - Or check if user has sufficient balance
+
+2. **Return Result**:
+   - Return \`"success"\` if the charge succeeds
+   - Return \`"failure"\` if the charge fails (for testing)
+
+**Simplified Implementation:**
+\`\`\`javascript
+async charge(userId, amount) {
+  // In real system: call payment gateway API
+  // For simulation: always succeed or add failure logic
+  return "success";
+}
+\`\`\`
+
+**Advanced Implementation (with failure simulation):**
+\`\`\`javascript
+async charge(userId, amount) {
+  // Simulate occasional failures (e.g., 10% failure rate)
+  if (Math.random() < 0.1) {
+    return "failure";
+  }
+  // Or check user balance, payment method validity, etc.
+  return "success";
+}
+\`\`\`
+
+---
+
+### **Method 2: \`refund(userId, amount)\`**
+
+**Parameters:**
+- \`userId\`: The identifier of the user to refund
+- \`amount\`: The amount to refund (should match the original charge)
+
+**What You Need to Do:**
+
+1. **Process Refund**:
+   - In a real system, this would call the payment gateway's refund API
+   - For simulation, you can just return success
+
+2. **Return Result**:
+   - Return \`"refunded"\` or \`"success"\` to indicate the refund completed
+
+**Why This is Compensation:**
+- This method "undoes" a previous \`charge\` call
+- If Inventory reservation fails after payment, we call \`refund\` to return the money
+- Ensures users aren't charged for incomplete orders
+
+**Example:**
+\`\`\`javascript
+// User was charged $50
+charge('u1', 50) → "success"
+
+// Order failed, need to refund
+refund('u1', 50) → "refunded"
+// User's money is returned
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  async charge(userId, amount) {
+    // Simulate payment processing
+    // In production: call payment gateway API
+    return "success";
+  },
+  
+  async refund(userId, amount) {
+    // Simulate refund processing
+    // In production: call payment gateway refund API
+    return "refunded";
+  }
+};
+\`\`\`
+
+**Real-World Considerations:**
+- **Idempotency**: Charge/refund should be idempotent (safe to retry)
+- **Idempotency Keys**: Use unique keys to prevent duplicate charges
+- **Partial Refunds**: Some systems support partial refunds
+- **Refund Timing**: Refunds can take time to process (async)
+- **Error Handling**: Network failures, gateway downtime, etc.`,
         initialCode: `module.exports = {
   async charge(userId, amount) { return "success"; },
   async refund(userId, amount) {}
@@ -1408,12 +2572,149 @@ It needs a \`charge(userId, amount)\` method. For simulation, assume it succeeds
         id: 'step3',
         title: 'Order Orchestrator',
         fileName: 'OrderService.js',
-        description: `**Task:** Implement the Saga Orchestrator.
-The \`createOrder\` method should:
-1. Call Inventory.reserve().
-2. If success, Call Payment.charge().
-3. If Payment fails, you MUST call Inventory.release() to rollback the stock reservation (Compensation).
-4. Return "success" or "failure".`,
+        description: `### **Understanding the Saga Orchestrator**
+
+The Order Service is the **orchestrator** that coordinates the distributed transaction across multiple microservices. It implements the **Saga Pattern**:
+- Executes operations in sequence
+- If any step fails, it executes **compensating transactions** to undo previous steps
+- Ensures eventual consistency across services
+
+**The Saga Flow:**
+1. **Forward Steps**: Reserve inventory → Charge payment
+2. **Compensation Steps**: If payment fails → Release inventory (undo reservation)
+
+---
+
+### **Method: \`createOrder(userId, itemId, qty, price)\`**
+
+**Parameters:**
+- \`userId\`: The user placing the order
+- \`itemId\`: The item being ordered
+- \`qty\`: Quantity of items
+- \`price\`: Total price for the order
+
+**What You Need to Do:**
+
+### **Step 1: Reserve Inventory**
+
+1. **Call Inventory Service**:
+   - Use \`await Inventory.reserve(itemId, qty)\`
+   - This attempts to reserve the stock
+
+2. **Check Result**:
+   - If \`reserve\` returns \`false\`, the order cannot proceed
+   - Return \`"failure"\` immediately (no stock available)
+   - No compensation needed (nothing was done yet)
+
+**Example:**
+\`\`\`javascript
+const reserved = await Inventory.reserve(itemId, qty);
+if (!reserved) {
+  return "failure"; // Out of stock
+}
+\`\`\`
+
+---
+
+### **Step 2: Charge Payment**
+
+1. **Calculate Amount**:
+   - Total amount = \`qty * price\` (or just use \`price\` if it's already total)
+
+2. **Call Payment Service**:
+   - Use \`await Payment.charge(userId, amount)\`
+   - This attempts to charge the user
+
+3. **Check Result**:
+   - If charge returns \`"success"\`, the order is complete!
+   - Return \`"success"\`
+
+4. **If Payment Fails**:
+   - This is where **compensation** is critical
+   - We already reserved inventory, so we must undo it
+   - Call \`await Inventory.release(itemId, qty)\` to give stock back
+   - Return \`"failure"\`
+
+**Example:**
+\`\`\`javascript
+const amount = qty * price; // or just use price
+const chargeResult = await Payment.charge(userId, amount);
+
+if (chargeResult === "success") {
+  return "success"; // Order complete!
+} else {
+  // Payment failed - need to compensate
+  await Inventory.release(itemId, qty); // Undo reservation
+  return "failure";
+}
+\`\`\`
+
+---
+
+### **Complete Implementation Flow**
+
+\`\`\`javascript
+async createOrder(userId, itemId, qty, price) {
+  // Step 1: Reserve inventory
+  const reserved = await Inventory.reserve(itemId, qty);
+  if (!reserved) {
+    return "failure"; // Out of stock, nothing to compensate
+  }
+  
+  // Step 2: Charge payment
+  const amount = qty * price;
+  const chargeResult = await Payment.charge(userId, amount);
+  
+  if (chargeResult === "success") {
+    return "success"; // Order complete!
+  } else {
+    // Compensation: Release inventory
+    await Inventory.release(itemId, qty);
+    return "failure"; // Payment failed, order cancelled
+  }
+}
+\`\`\`
+
+---
+
+### **Edge Cases and Error Handling**
+
+1. **Inventory Reserve Fails**:
+   - No compensation needed (nothing was done)
+   - Return failure immediately
+
+2. **Payment Charge Fails**:
+   - **Must** call \`Inventory.release()\` to compensate
+   - This is the critical compensation step
+
+3. **Network Failures**:
+   - In production, you'd need retry logic
+   - Idempotency keys to prevent duplicate operations
+   - Timeout handling
+
+4. **Partial Failures**:
+   - What if \`release\` fails? (This is a problem - might need retry or manual intervention)
+   - In production, you'd log this for manual review
+
+---
+
+### **Why This Pattern Works**
+
+- **No Distributed Transactions**: Each service manages its own data
+- **Eventual Consistency**: System eventually reaches a consistent state
+- **Compensation**: Failed operations are undone
+- **Resilient**: Can handle partial failures gracefully
+
+**Trade-offs:**
+- **Complexity**: More complex than ACID transactions
+- **Eventual Consistency**: System might be temporarily inconsistent
+- **Compensation Logic**: Must implement undo operations for every forward step
+
+**Real-World Usage:**
+- E-commerce order processing
+- Booking systems (hotels, flights)
+- Financial transactions
+- Any distributed workflow`,
         initialCode: `const Inventory = require('./InventoryService.js');
 const Payment = require('./PaymentService.js');
 module.exports = {
@@ -1454,8 +2755,62 @@ module.exports = {
         id: 's1',
         title: 'Log Collector',
         fileName: 'Collector.js',
-        description: `**Task:** Implement the ingestion layer.
-The \`ingest(logString)\` function receives raw logs from servers. It should push them into a durable queue (mocked as \`system.queue\`) to ensure no logs are lost if the parser is slow.`,
+        description: `### **Understanding Log Collection**
+
+In high-scale production systems, logs come from thousands of servers simultaneously. The Log Collector is the **ingestion layer** that:
+- Receives logs from various sources (servers, applications, services)
+- Buffers them in a durable queue
+- Decouples log producers from log processors
+
+**Why Use a Queue?**
+- **Burst Handling**: Logs arrive in bursts (e.g., during errors)
+- **Backpressure**: If parser is slow, queue buffers logs instead of dropping them
+- **Durability**: Queue persists logs even if collector crashes
+- **Decoupling**: Producers and consumers can scale independently
+
+---
+
+### **Method: \`ingest(logString)\`**
+
+**Parameters:**
+- \`logString\`: A raw log message from a server (e.g., \`"ERROR: Database timeout"\`, \`"INFO: User logged in"\`)
+
+**What You Need to Do:**
+
+1. **Push to Queue**:
+   - Use \`system.queue.push(logString)\` to add the log to the queue
+   - The queue acts as a buffer between collectors and processors
+
+2. **Return Success**:
+   - Return \`true\` to indicate the log was successfully ingested
+   - In production, you might return more details (queue position, timestamp, etc.)
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  async ingest(log) {
+    // Push log to durable queue
+    system.queue.push(log);
+    return true; // Successfully ingested
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- What if queue is full? (In production, you'd handle backpressure or use a bounded queue)
+- What if log is empty/null? (Handle gracefully - maybe skip or log warning)
+- What if queue push fails? (Handle error, maybe retry or return false)
+
+**Why This is Fast:**
+- **Non-blocking**: Just pushes to queue, doesn't wait for processing
+- **Simple**: Minimal processing, just ingestion
+- **Scalable**: Can have multiple collectors pushing to same queue
+
+**Real-World Considerations:**
+- **Batching**: In production, you might batch logs before pushing (more efficient)
+- **Compression**: Compress logs before queueing to save space
+- **Partitioning**: Use multiple queues for different log types (errors vs info)
+- **Rate Limiting**: Prevent one service from flooding the queue`,
         initialCode: `module.exports = { async ingest(log) { return true; } };`,
         testCases: [
           { input: { method: 'ingest', args: ['ERR'] }, expected: true, mode: 'method_call' },
@@ -1469,8 +2824,126 @@ The \`ingest(logString)\` function receives raw logs from servers. It should pus
         id: 's2',
         title: 'Log Parser',
         fileName: 'Parser.js',
-        description: `**Task:** Implement the processing layer.
-The \`process()\` function should pull messages from the queue, parse the JSON or string format, and extract the severity level.`,
+        description: `### **Understanding Log Parsing**
+
+The Log Parser is the **processing layer** that:
+- Pulls logs from the queue (consumer)
+- Parses raw log strings into structured data
+- Extracts meaningful information (severity, timestamp, message, etc.)
+
+**Why Parse Logs?**
+- **Structured Data**: Easier to query, filter, and analyze
+- **Extract Metadata**: Severity level, timestamps, source, etc.
+- **Normalization**: Convert different log formats into a standard structure
+- **Enrichment**: Add context, correlation IDs, etc.
+
+---
+
+### **Method: \`process()\`**
+
+**What You Need to Do:**
+
+1. **Pull from Queue**:
+   - Use \`system.queue.pop()\` or \`system.queue.shift()\` to get the next log
+   - This removes the log from the queue (FIFO - First In, First Out)
+   - If queue is empty, return \`null\`
+
+2. **Parse the Log String**:
+   - Logs might be in different formats:
+     - **Simple string**: \`"ERROR: Database timeout"\`
+     - **JSON**: \`'{"level":"ERROR","message":"Database timeout"}'\`
+     - **Structured**: \`"2024-01-01 ERROR: Database timeout"\`
+
+3. **Extract Severity Level**:
+   - Look for patterns like \`"ERROR"\`, \`"WARN"\`, \`"INFO"\`, \`"DEBUG"\`
+   - Common patterns:
+     - Starts with level: \`"ERROR: message"\`
+     - JSON format: \`{level: "ERROR", ...}\`
+     - Case-insensitive matching
+
+4. **Return Parsed Object**:
+   - Return an object with extracted fields:
+     - \`{ level: "ERROR", message: "Database timeout", raw: "..." }\`
+   - Or return \`null\` if queue is empty
+
+**Example Parsing Logic:**
+\`\`\`javascript
+async process() {
+  // Pull from queue
+  const logString = system.queue.shift(); // or pop()
+  if (!logString) return null; // Queue empty
+  
+  // Try to parse as JSON first
+  let parsed;
+  try {
+    parsed = JSON.parse(logString);
+    // If successful, extract level
+    return {
+      level: parsed.level || parsed.severity || "INFO",
+      message: parsed.message || logString,
+      raw: logString
+    };
+  } catch (e) {
+    // Not JSON, parse as string
+    // Look for "LEVEL: message" pattern
+    const match = logString.match(/^(ERROR|WARN|INFO|DEBUG):[ ]*(.+)$/i);
+    if (match) {
+      return {
+        level: match[1].toUpperCase(),
+        message: match[2],
+        raw: logString
+      };
+    }
+    // Default to INFO if no level found
+    return {
+      level: "INFO",
+      message: logString,
+      raw: logString
+    };
+  }
+}
+\`\`\`
+
+**Edge Cases:**
+- **Empty Queue**: Return \`null\`
+- **Invalid JSON**: Fall back to string parsing
+- **No Severity Found**: Default to "INFO" or "UNKNOWN"
+- **Malformed Logs**: Handle gracefully, don't crash
+
+**Implementation Hint:**
+\`\`\`javascript
+module.exports = {
+  async process() {
+    if (system.queue.length === 0) return null;
+    
+    const log = system.queue.shift();
+    
+    // Try JSON first
+    try {
+      const json = JSON.parse(log);
+      return {
+        level: json.level || "INFO",
+        message: json.message || log
+      };
+    } catch {
+      // Parse string format: "LEVEL: message"
+      const parts = log.split(':');
+      if (parts.length >= 2) {
+        const level = parts[0].trim().toUpperCase();
+        const message = parts.slice(1).join(':').trim();
+        return { level, message };
+      }
+      return { level: "INFO", message: log };
+    }
+  }
+};
+\`\`\`
+
+**Why This Matters:**
+- **Structured Analysis**: Parsed logs can be queried, filtered, aggregated
+- **Alerting**: Can trigger alerts based on severity level
+- **Debugging**: Easier to find specific errors in structured format
+- **Analytics**: Can analyze log patterns, trends, etc.`,
         initialCode: `module.exports = { async process() { return {}; } };`,
         testCases: [
           { input: { method: 'process', args: [] }, expected: null, mode: 'method_call' },
@@ -1484,8 +2957,168 @@ The \`process()\` function should pull messages from the queue, parse the JSON o
         id: 's3',
         title: 'Alerting Engine',
         fileName: 'Alerting.js',
-        description: `**Task:** Tie it all together.
-Implement a pipeline runner that ingests a log, triggers the parser, and checks if the parsed log is an 'ERROR'. If so, trigger an alert.`,
+        description: `### **Understanding the Alerting Pipeline**
+
+The Alerting Engine is the **orchestrator** that ties the entire log pipeline together:
+1. Ingests logs (via Collector)
+2. Processes them (via Parser)
+3. Checks for critical conditions (ERROR level)
+4. Triggers alerts when needed
+
+**Why Alerting is Critical:**
+- **Proactive Monitoring**: Catch errors before users report them
+- **Real-time Response**: Alert immediately when critical issues occur
+- **Automation**: Reduce need for manual log monitoring
+- **Prioritization**: Focus on errors, not noise
+
+---
+
+### **Method: \`runPipeline()\`**
+
+**What You Need to Do:**
+
+1. **Ingest a Log** (Optional - for testing):
+   - You might receive a log to process, or pull from queue
+   - For this challenge, the pipeline might be triggered with a log
+   - Or it might continuously poll the queue
+
+2. **Parse the Log**:
+   - Call \`Parser.process()\` to get the next log from queue and parse it
+   - This returns a parsed object or \`null\` if queue is empty
+
+3. **Check for Errors**:
+   - If parsed log exists, check if \`parsed.level === "ERROR"\`
+   - ERROR level indicates a critical issue that needs attention
+
+4. **Trigger Alert** (if ERROR):
+   - If it's an ERROR, return \`"ALERT"\` to indicate an alert was triggered
+   - In production, this would:
+     - Send email/SMS notification
+     - Create incident ticket
+     - Page on-call engineer
+     - Update monitoring dashboard
+
+5. **Return Status**:
+   - If no error: return \`"OK"\`
+   - If error found: return \`"ALERT"\`
+   - If no logs: return \`"OK"\` (nothing to process)
+
+**Example Flow:**
+\`\`\`javascript
+async runPipeline() {
+  // Step 1: Parse next log from queue
+  const parsed = await Parser.process();
+  
+  // Step 2: Check if queue is empty
+  if (!parsed) {
+    return "OK"; // No logs to process
+  }
+  
+  // Step 3: Check severity level
+  if (parsed.level === "ERROR") {
+    // Trigger alert (in production: send notification, create ticket, etc.)
+    // For this challenge, just return "ALERT"
+    return "ALERT";
+  }
+  
+  // Step 4: Non-error log, continue processing
+  return "OK";
+}
+\`\`\`
+
+---
+
+### **Complete Pipeline Flow**
+
+**End-to-End Example:**
+\`\`\`javascript
+// 1. Log arrives at collector
+Collector.ingest("ERROR: Database timeout") → 
+  Pushes to queue → returns true
+
+// 2. Parser processes
+Parser.process() → 
+  Pulls from queue → 
+  Parses: { level: "ERROR", message: "Database timeout" } →
+  Returns parsed object
+
+// 3. Alerting checks
+runPipeline() → 
+  Gets parsed log → 
+  Checks: level === "ERROR"? Yes →
+  Returns "ALERT"
+\`\`\`
+
+---
+
+### **Advanced: Continuous Processing**
+
+In production, the pipeline would run continuously:
+
+\`\`\`javascript
+async runPipeline() {
+  while (true) {
+    const parsed = await Parser.process();
+    if (!parsed) {
+      await sleep(1000); // Wait if queue empty
+      continue;
+    }
+    
+    if (parsed.level === "ERROR") {
+      triggerAlert(parsed);
+      return "ALERT";
+    }
+    
+    // Process other log levels (store, analyze, etc.)
+  }
+}
+\`\`\`
+
+---
+
+### **Edge Cases**
+
+- **Empty Queue**: Return "OK" (nothing to process)
+- **Invalid Parsed Log**: Handle gracefully, maybe log warning
+- **Multiple Errors**: Process one at a time, or batch alerts
+- **Alert Rate Limiting**: Don't spam alerts (e.g., max 1 per minute)
+
+**Implementation:**
+\`\`\`javascript
+const Collector = require('./Collector.js');
+const Parser = require('./Parser.js');
+
+module.exports = {
+  async runPipeline() {
+    // Process next log from queue
+    const parsed = await Parser.process();
+    
+    if (!parsed) {
+      return "OK"; // No logs
+    }
+    
+    // Check for errors
+    if (parsed.level === "ERROR") {
+      // In production: send alert, create ticket, page engineer
+      return "ALERT";
+    }
+    
+    return "OK";
+  }
+};
+\`\`\`
+
+**Why This Pattern is Used:**
+- **Decoupling**: Each component can scale independently
+- **Resilience**: Queue buffers logs if parser is slow
+- **Scalability**: Can have multiple parsers processing in parallel
+- **Observability**: Centralized log processing and alerting
+
+**Real-World Enhancements:**
+- **Alert Deduplication**: Don't alert on same error repeatedly
+- **Alert Grouping**: Group related errors together
+- **Severity Levels**: Different actions for ERROR vs WARN
+- **Context Enrichment**: Add service name, trace ID, etc.`,
         initialCode: `const C = require('./Collector.js'); const P = require('./Parser.js');
 module.exports = { async runPipeline() { return "OK"; } };`,
         testCases: [
@@ -1525,8 +3158,78 @@ module.exports = { async runPipeline() { return "OK"; } };`,
         id: 's1',
         title: 'Consistent Hashing',
         fileName: 'Router.js',
-        description: `**Task:** We need to decide which shard a user belongs to.
-Implement a deterministic hashing function \`getShard(userId)\` that maps a string ID to a shard index (0 to N).`,
+        description: `### **Understanding Shard Routing**
+
+When data is too large for a single database, we **shard** it across multiple databases. The Router's job is to determine which shard (database) a given user belongs to.
+
+**Why Deterministic Hashing?**
+- **Consistency**: Same user always maps to same shard
+- **Load Balancing**: Users distributed evenly across shards
+- **Predictable**: Can determine shard without querying all databases
+
+---
+
+### **Method: \`getShard(userId)\`**
+
+**Parameters:**
+- \`userId\`: A string identifier for the user (e.g., \`"user_123"\`, \`"a"\`, \`"b"\`)
+
+**What You Need to Do:**
+
+1. **Hash the User ID**:
+   - Convert the string to a number using a hash function
+   - Simple approach: Sum character codes and take modulo
+   - Example: \`hash = userId.charCodeAt(0) + userId.charCodeAt(1) + ...\`
+   - Then: \`hash % numShards\` to get a value between 0 and numShards-1
+
+2. **Return Shard Index**:
+   - Return the calculated shard index (0, 1, 2, ..., or numShards-1)
+   - This tells you which database to use
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  getShard(userId) {
+    const numShards = 3; // Assuming 3 shards (0, 1, 2)
+    
+    // Simple hash: sum character codes
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash += userId.charCodeAt(i);
+    }
+    
+    // Map to shard index
+    return hash % numShards;
+  }
+};
+\`\`\`
+
+**Example:**
+\`\`\`javascript
+getShard('a') → 
+  hash = 'a'.charCodeAt(0) = 97 →
+  97 % 3 = 1 →
+  return 1
+
+getShard('b') → 
+  hash = 'b'.charCodeAt(0) = 98 →
+  98 % 3 = 2 →
+  return 2
+
+getShard('c') → 
+  hash = 'c'.charCodeAt(0) = 99 →
+  99 % 3 = 0 →
+  return 0
+\`\`\`
+
+**Edge Cases:**
+- What if userId is empty? (Handle gracefully - maybe return 0)
+- What if numShards changes? (Users would move - this is why consistent hashing is better, but simple modulo works for fixed shards)
+
+**Why This Works:**
+- **Deterministic**: Same input always produces same output
+- **Distributed**: Users spread across all shards
+- **Fast**: O(n) where n = userId length (very fast)`,
         initialCode: `module.exports = { getShard(u) { return 0; } };`,
         testCases: [
           { input: { method: 'getShard', args: ['a'] }, expected: 1, mode: 'method_call' },
@@ -1540,8 +3243,116 @@ Implement a deterministic hashing function \`getShard(userId)\` that maps a stri
         id: 's2',
         title: 'Data Store',
         fileName: 'Store.js',
-        description: `**Task:** Implement the storage interface.
-The \`save(shardId, key, val)\` method should route the data to the correct simulated node storage.`,
+        description: `### **Understanding Sharded Storage**
+
+The Store manages data across multiple shards (simulated database nodes). Each shard is a separate storage location, and data must be saved to and retrieved from the correct shard.
+
+**Why Separate Shards?**
+- **Scalability**: Each shard can be on a different server
+- **Performance**: Smaller databases = faster queries
+- **Isolation**: Failure in one shard doesn't affect others
+
+---
+
+### **Method 1: \`save(shardId, key, val)\`**
+
+**Parameters:**
+- \`shardId\`: The shard index (0, 1, 2, etc.) where data should be stored
+- \`key\`: The key to store (e.g., \`"k"\`, \`"user_123"\`)
+- \`val\`: The value to store (e.g., \`"v"\`, user data object)
+
+**What You Need to Do:**
+
+1. **Create Shard Storage** (if needed):
+   - Maintain an object where each shard has its own storage
+   - Example: \`const shards = { 0: {}, 1: {}, 2: {} }\`
+   - Or use an array: \`const shards = [{}, {}, {}]\`
+
+2. **Store in Correct Shard**:
+   - Access the shard: \`shards[shardId]\`
+   - Store key-value: \`shards[shardId][key] = val\`
+
+3. **Return** (optional):
+   - Return \`undefined\` or the stored value
+
+**Implementation:**
+\`\`\`javascript
+// Initialize shard storage
+const shards = [
+  {}, // Shard 0
+  {}, // Shard 1
+  {}  // Shard 2
+];
+
+module.exports = {
+  async save(shardId, key, val) {
+    // Store in the specified shard
+    shards[shardId][key] = val;
+  }
+};
+\`\`\`
+
+---
+
+### **Method 2: \`get(shardId, key)\`**
+
+**Parameters:**
+- \`shardId\`: The shard index to read from
+- \`key\`: The key to retrieve
+
+**What You Need to Do:**
+
+1. **Access the Shard**:
+   - Get the shard: \`shards[shardId]\`
+
+2. **Retrieve Value**:
+   - Return \`shards[shardId][key]\`
+   - Returns \`undefined\` if key doesn't exist
+
+**Example:**
+\`\`\`javascript
+// Save to shard 0
+save(0, 'k', 'v') → shards[0]['k'] = 'v'
+
+// Read from shard 0
+get(0, 'k') → returns 'v'
+
+// Save to shard 1
+save(1, 'k2', 'v2') → shards[1]['k2'] = 'v2'
+
+// Read from shard 1
+get(1, 'k2') → returns 'v2'
+\`\`\`
+
+**Edge Cases:**
+- What if shardId is out of bounds? (Handle gracefully - maybe throw error or return null)
+- What if key doesn't exist? (Return undefined, which is normal)
+
+**Complete Implementation:**
+\`\`\`javascript
+const shards = [{}, {}, {}]; // 3 shards
+
+module.exports = {
+  async save(shardId, key, val) {
+    if (shardId < 0 || shardId >= shards.length) {
+      throw new Error('Invalid shard ID');
+    }
+    shards[shardId][key] = val;
+  },
+  
+  async get(shardId, key) {
+    if (shardId < 0 || shardId >= shards.length) {
+      return undefined;
+    }
+    return shards[shardId][key];
+  }
+};
+\`\`\`
+
+**Why This Structure:**
+- **Isolation**: Each shard is independent
+- **Simple**: Easy to understand and implement
+- **Scalable**: Can add more shards by extending the array`,
         initialCode: `module.exports = { async save(s,k,v) {} };`,
         testCases: [
           { input: { method: 'save', args: [0,'k','v'] }, expected: undefined, mode: 'method_call' },
@@ -1555,8 +3366,127 @@ The \`save(shardId, key, val)\` method should route the data to the correct simu
         id: 's3',
         title: 'Proxy Service',
         fileName: 'Proxy.js',
-        description: `**Task:** Build the Proxy that hides this complexity from the application.
-The app calls \`writeUser(userId, data)\`. The proxy must calculate the shard and route the write to the correct store.`,
+        description: `### **Understanding the Proxy Pattern**
+
+The Proxy is a **facade** that hides the complexity of sharding from the application. The app doesn't need to know:
+- How many shards exist
+- Which shard a user belongs to
+- How to route requests
+
+The Proxy handles all of this internally.
+
+---
+
+### **Method 1: \`writeUser(userId, data)\`**
+
+**Parameters:**
+- \`userId\`: The user identifier (e.g., \`"a"\`, \`"user_123"\`)
+- \`data\`: The user data to store (e.g., \`"d"\`, user object)
+
+**What You Need to Do:**
+
+1. **Calculate Shard**:
+   - Use \`Router.getShard(userId)\` to determine which shard this user belongs to
+   - This returns a shard index (0, 1, 2, etc.)
+
+2. **Route to Store**:
+   - Call \`Store.save(shardId, userId, data)\`
+   - This saves the data to the correct shard
+
+3. **Return Confirmation**:
+   - Return a message like \`"Saved to shard {shardId}"\`
+   - This helps verify the routing worked correctly
+
+**Example:**
+\`\`\`javascript
+writeUser('a', 'd') →
+  Router.getShard('a') = 1 →
+  Store.save(1, 'a', 'd') →
+  return "Saved to shard 1"
+\`\`\`
+
+---
+
+### **Method 2: \`readUser(userId)\`**
+
+**Parameters:**
+- \`userId\`: The user identifier to read
+
+**What You Need to Do:**
+
+1. **Calculate Shard**:
+   - Use \`Router.getShard(userId)\` to find which shard the user is on
+   - Same calculation as write (deterministic)
+
+2. **Read from Store**:
+   - Call \`Store.get(shardId, userId)\`
+   - This retrieves the data from the correct shard
+
+3. **Return Data**:
+   - Return the retrieved value
+   - Returns \`undefined\` if user doesn't exist
+
+**Example:**
+\`\`\`javascript
+readUser('a') →
+  Router.getShard('a') = 1 →
+  Store.get(1, 'a') = 'd' →
+  return 'd'
+\`\`\`
+
+---
+
+### **Complete Implementation**
+
+\`\`\`javascript
+const Router = require('./Router.js');
+const Store = require('./Store.js');
+
+module.exports = {
+  async writeUser(userId, data) {
+    // Step 1: Determine shard
+    const shardId = Router.getShard(userId);
+    
+    // Step 2: Save to correct shard
+    await Store.save(shardId, userId, data);
+    
+    // Step 3: Return confirmation
+    return \`Saved to shard \${shardId}\`;
+  },
+  
+  async readUser(userId) {
+    // Step 1: Determine shard
+    const shardId = Router.getShard(userId);
+    
+    // Step 2: Read from correct shard
+    const data = await Store.get(shardId, userId);
+    
+    // Step 3: Return data
+    return data;
+  }
+};
+\`\`\`
+
+---
+
+### **Why This Pattern is Powerful**
+
+**Benefits:**
+- **Transparency**: Application doesn't know about sharding
+- **Scalability**: Can add more shards without changing application code
+- **Consistency**: Same user always goes to same shard
+- **Performance**: Smaller databases = faster queries
+
+**Trade-offs:**
+- **Cross-Shard Queries**: Can't easily query across all shards (need to query each)
+- **Rebalancing**: Moving users between shards is complex
+- **Hot Spots**: Some shards might get more load if hash distribution is uneven
+
+**Real-World Enhancements:**
+- **Consistent Hashing**: Better than simple modulo (handles shard addition/removal)
+- **Replication**: Each shard might have replicas for redundancy
+- **Caching**: Cache frequently accessed users
+- **Monitoring**: Track shard load, query performance, etc.`,
         initialCode: `const R = require('./Router.js'); const S = require('./Store.js');
 module.exports = { async writeUser(u,d) { return ""; } };`,
         testCases: [
@@ -1598,9 +3528,118 @@ module.exports = { async writeUser(u,d) { return ""; } };`,
         id: 's1',
         title: 'Driver Tracking',
         fileName: 'DriverIndex.js',
-        description: `**Task:** Manage geospatial data.
-Implement \`updateLocation(driverId, x, y)\` to store coordinates.
-Implement \`findNearest(x, y)\` to scan the active drivers and return the closest one using Euclidean distance.`,
+        description: `### **Understanding Geospatial Tracking**
+
+In a ride-sharing system, you need to track driver locations in real-time and find the nearest driver to a rider. This requires:
+- **Location Storage**: Store driver coordinates (x, y)
+- **Distance Calculation**: Calculate distance between points
+- **Nearest Neighbor Search**: Find the closest driver
+
+**Why This Matters:**
+- **User Experience**: Faster pickup times
+- **Efficiency**: Minimize driver travel distance
+- **Cost**: Reduce fuel costs and wait times
+
+---
+
+### **Method 1: \`updateLocation(driverId, x, y)\`**
+
+**Parameters:**
+- \`driverId\`: Unique identifier for the driver (e.g., \`"d1"\`)
+- \`x\`: X coordinate (e.g., \`0\`, \`10.5\`)
+- \`y\`: Y coordinate (e.g., \`0\`, \`20.3\`)
+
+**What You Need to Do:**
+
+1. **Store Coordinates**:
+   - Maintain a \`drivers\` object: \`{ driverId: {x, y}, ... }\`
+   - Update or create the entry: \`drivers[driverId] = {x, y}\`
+
+**Implementation:**
+\`\`\`javascript
+const drivers = {};
+
+module.exports = {
+  updateLocation(id, x, y) {
+    drivers[id] = {x, y};
+  }
+};
+\`\`\`
+
+---
+
+### **Method 2: \`findNearest(x, y)\`**
+
+**Parameters:**
+- \`x\`: Rider's X coordinate
+- \`y\`: Rider's Y coordinate
+
+**What You Need to Do:**
+
+1. **Calculate Distance to Each Driver**:
+   - Use **Euclidean distance** formula:
+     - \`distance = sqrt((x2 - x1)² + (y2 - y1)²)\`
+     - Or simplified: \`distance = Math.sqrt((x - driver.x)² + (y - driver.y)²)\`
+
+2. **Find Minimum Distance**:
+   - Iterate through all drivers
+   - Track the driver with minimum distance
+   - Keep track of both the distance and driver ID
+
+3. **Return Nearest Driver ID**:
+   - Return the \`driverId\` of the closest driver
+   - Return \`null\` if no drivers available
+
+**Example:**
+\`\`\`javascript
+// Drivers: { d1: {x:0, y:0}, d2: {x:5, y:5} }
+// Rider at: (1, 1)
+
+findNearest(1, 1) →
+  d1: distance = sqrt((1-0)² + (1-0)²) = sqrt(2) ≈ 1.41
+  d2: distance = sqrt((1-5)² + (1-5)²) = sqrt(32) ≈ 5.66
+  Minimum: d1 (1.41) →
+  return 'd1'
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+findNearest(x, y) {
+  if (Object.keys(drivers).length === 0) return null;
+  
+  let minDistance = Infinity;
+  let nearestDriver = null;
+  
+  for (const [id, location] of Object.entries(drivers)) {
+    const dx = x - location.x;
+    const dy = y - location.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestDriver = id;
+    }
+  }
+  
+  return nearestDriver;
+}
+\`\`\`
+
+**Edge Cases:**
+- **No Drivers**: Return \`null\`
+- **Single Driver**: Return that driver
+- **Tie Distance**: Return first one found (or handle ties)
+
+**Why Euclidean Distance:**
+- **Simple**: Easy to calculate
+- **Accurate**: For 2D coordinates
+- **Fast**: O(n) where n = number of drivers
+
+**Real-World Enhancements:**
+- **Haversine Formula**: For real-world lat/lng (accounts for Earth's curvature)
+- **Geohashing**: Pre-index drivers by geographic regions
+- **Quadtree**: Spatial data structure for faster lookups
+- **Caching**: Cache nearest drivers for popular locations`,
         initialCode: `const drivers = {};
 module.exports = {
   updateLocation(id, x, y) {
@@ -1620,11 +3659,84 @@ module.exports = {
         id: 's2',
         title: 'Surge Pricing',
         fileName: 'Pricing.js',
-        description: `**Task:** Implement dynamic pricing logic.
-If demand (riders) exceeds supply (drivers), apply a multiplier.
-- If Riders > Drivers * 2 -> 2.0x Surge.
-- If Riders > Drivers -> 1.5x Surge.
-- Else 1.0x.`,
+        description: `### **Understanding Dynamic Pricing**
+
+Surge pricing adjusts ride prices based on supply and demand:
+- **High Demand, Low Supply**: Prices increase (surge)
+- **Low Demand, High Supply**: Normal prices
+- **Balanced**: Normal prices
+
+**Why Surge Pricing:**
+- **Incentivize Drivers**: Higher prices bring more drivers online
+- **Manage Demand**: Higher prices reduce demand during peak times
+- **Market Efficiency**: Prices reflect real-time market conditions
+
+---
+
+### **Method: \`getMultiplier(drivers, riders)\`**
+
+**Parameters:**
+- \`drivers\`: Number of available drivers (e.g., \`10\`, \`5\`)
+- \`riders\`: Number of riders requesting rides (e.g., \`5\`, \`15\`)
+
+**What You Need to Do:**
+
+1. **Calculate Demand-to-Supply Ratio**:
+   - Compare \`riders\` to \`drivers\`
+   - Higher ratio = more demand relative to supply
+
+2. **Apply Surge Rules**:
+   - **If Riders > Drivers * 2**: Return \`2.0\` (2x surge - high demand)
+   - **Else if Riders > Drivers**: Return \`1.5\` (1.5x surge - moderate demand)
+   - **Else**: Return \`1.0\` (no surge - normal pricing)
+
+**Example:**
+\`\`\`javascript
+getMultiplier(10, 5) →
+  Riders (5) > Drivers * 2 (20)? No
+  Riders (5) > Drivers (10)? No
+  Return: 1.0 (normal pricing)
+
+getMultiplier(5, 15) →
+  Riders (15) > Drivers * 2 (10)? Yes! →
+  Return: 2.0 (high surge)
+
+getMultiplier(10, 15) →
+  Riders (15) > Drivers * 2 (20)? No
+  Riders (15) > Drivers (10)? Yes! →
+  Return: 1.5 (moderate surge)
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  getMultiplier(drivers, riders) {
+    if (riders > drivers * 2) {
+      return 2.0; // High surge
+    } else if (riders > drivers) {
+      return 1.5; // Moderate surge
+    } else {
+      return 1.0; // Normal pricing
+    }
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **Zero Drivers**: All riders, infinite demand → return 2.0 (or handle specially)
+- **Zero Riders**: No demand → return 1.0
+- **Equal Counts**: Riders == Drivers → return 1.0 (no surge)
+
+**Why This Works:**
+- **Simple Rules**: Easy to understand and implement
+- **Effective**: Encourages driver supply during high demand
+- **Fair**: Prices reflect market conditions
+
+**Real-World Enhancements:**
+- **Gradual Surge**: More granular multipliers (1.1x, 1.2x, etc.)
+- **Time-Based**: Higher surge during rush hours
+- **Location-Based**: Surge in specific areas
+- **Historical Data**: Use past patterns to predict surge`,
         initialCode: `module.exports = {
   getMultiplier(drivers, riders) {
     return 1.0;
@@ -1639,11 +3751,112 @@ If demand (riders) exceeds supply (drivers), apply a multiplier.
         id: 's3',
         title: 'Mission Control',
         fileName: 'Dispatcher.js',
-        description: `**Task:** Orchestrate the booking.
-When \`requestRide(riderId, x, y)\` is called:
-1. Find the nearest driver. If none, return "NO_CARS".
-2. Calculate the current price multiplier.
-3. Return the match details.`,
+        description: `### **Understanding the Dispatcher**
+
+The Dispatcher is the **orchestrator** that coordinates the entire ride request process:
+1. Finds the nearest available driver
+2. Calculates dynamic pricing
+3. Returns match information to the rider
+
+**Why This Orchestration:**
+- **Single Entry Point**: Rider makes one request, gets complete information
+- **Coordination**: Brings together location tracking and pricing
+- **User Experience**: Returns all needed info in one response
+
+---
+
+### **Method: \`requestRide(riderId, x, y)\`**
+
+**Parameters:**
+- \`riderId\`: The rider requesting a ride (e.g., \`"r1"\`)
+- \`x\`: Rider's X coordinate
+- \`y\`: Rider's Y coordinate
+
+**What You Need to Do:**
+
+### **Step 1: Find Nearest Driver**
+
+1. **Call Driver Index**:
+   - Use \`Index.findNearest(x, y)\` to find the closest driver
+   - This returns a \`driverId\` or \`null\`
+
+2. **Check Availability**:
+   - If \`findNearest\` returns \`null\`, no drivers available
+   - Return \`{ driverId: null, priceMultiplier: 1 }\` or handle specially
+
+---
+
+### **Step 2: Calculate Price Multiplier**
+
+1. **Count Active Drivers**:
+   - You need the total number of active drivers
+   - You might need to add a method to \`DriverIndex\` to count drivers
+   - Or pass it as a parameter
+   - For this challenge, you might need to track it or estimate
+
+2. **Count Active Riders**:
+   - Similarly, you need the number of riders
+   - This might be passed as a parameter or tracked
+   - For simplicity, you might use a fixed value or estimate
+
+3. **Call Pricing Service**:
+   - Use \`Pricing.getMultiplier(drivers, riders)\` to get the surge multiplier
+   - This returns \`1.0\`, \`1.5\`, or \`2.0\`
+
+---
+
+### **Step 3: Return Match Details**
+
+Return an object with:
+- \`driverId\`: The ID of the matched driver (or \`null\` if none)
+- \`priceMultiplier\`: The surge pricing multiplier
+
+**Example:**
+\`\`\`javascript
+requestRide('r1', 1, 1) →
+  Step 1: Index.findNearest(1, 1) = 'd1' →
+  Step 2: Count drivers = 1, riders = 1 (estimate) →
+         Pricing.getMultiplier(1, 1) = 1.0 →
+  Step 3: Return { driverId: 'd1', priceMultiplier: 1.0 }
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+const Index = require('./DriverIndex.js');
+const Pricing = require('./Pricing.js');
+
+module.exports = {
+  requestRide(riderId, x, y) {
+    // Step 1: Find nearest driver
+    const driverId = Index.findNearest(x, y);
+    
+    if (!driverId) {
+      return { driverId: null, priceMultiplier: 1.0 };
+    }
+    
+    // Step 2: Calculate surge (simplified - in real system, track counts)
+    // For this challenge, you might need to estimate or track these
+    const drivers = 1; // Simplified - count active drivers
+    const riders = 1;  // Simplified - count active riders
+    
+    const priceMultiplier = Pricing.getMultiplier(drivers, riders);
+    
+    // Step 3: Return match
+    return { driverId, priceMultiplier };
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **No Drivers Available**: Return \`{ driverId: null, priceMultiplier: 1.0 }\`
+- **Single Driver**: Still calculate surge based on demand
+- **High Surge**: Return higher multiplier when demand is high
+
+**Real-World Enhancements:**
+- **Driver Availability**: Check if driver is available (not on another ride)
+- **ETA Calculation**: Estimate time to pickup
+- **Route Optimization**: Consider traffic, distance, etc.
+- **Real-Time Tracking**: Update driver location continuously`,
         initialCode: `const Index = require('./DriverIndex.js');
 const Pricing = require('./Pricing.js');
 
@@ -1688,9 +3901,84 @@ module.exports = {
         id: 's1',
         title: 'Operational Transform',
         fileName: 'Transform.js',
-        description: `**Task:** Implement Operational Transformation (OT) logic.
-If User A types "x" at index 5, and User B types "y" at index 2 *before* User A's change arrives, we must shift User A's insertion point to index 6.
-Implement \`transform(opA, opB)\` to adjust opA based on the execution of opB.`,
+        description: `### **Understanding Operational Transformation**
+
+When multiple users edit the same document simultaneously, their operations can conflict. Operational Transformation (OT) resolves these conflicts by transforming operations so they can be applied correctly.
+
+**The Problem:**
+- User A inserts "x" at position 5
+- User B inserts "y" at position 2 (before A's change arrives)
+- If we apply A's operation directly, "x" goes to position 5, but "y" is now at position 2
+- The document becomes: "...y...x..." instead of "...y...x..."
+- We need to shift A's position to account for B's insertion
+
+**The Solution:**
+Transform operation A based on operation B:
+- If B inserts before A's position → shift A's position forward
+- If B deletes before A's position → shift A's position backward
+
+---
+
+### **Method: \`transform(opA, opB)\`**
+
+**Parameters:**
+- \`opA\`: Operation to transform (e.g., \`{pos: 5, char: 'x'}\`)
+- \`opB\`: Operation that was already applied (e.g., \`{pos: 2, char: 'y'}\`)
+
+**What You Need to Do:**
+
+1. **Check Operation Positions**:
+   - Compare \`opA.pos\` (position of operation A) with \`opB.pos\` (position of operation B)
+
+2. **Apply Transformation Rules**:
+   - **If opB.pos < opA.pos**: Operation B happened before A's position
+     - B inserted/deleted before A → shift A's position
+     - For insertions: \`opA.pos += 1\` (one character was added before)
+     - For deletions: \`opA.pos -= 1\` (one character was removed before)
+   
+   - **If opB.pos >= opA.pos**: Operation B happened at or after A's position
+     - No shift needed (A's position is before B)
+
+3. **Return Transformed Operation**:
+   - Return \`opA\` with adjusted position
+   - Don't modify the original, return a new object or modified copy
+
+**Example:**
+\`\`\`javascript
+// User A wants to insert 'x' at position 5
+// User B already inserted 'y' at position 2
+transform({pos: 5}, {pos: 2}) →
+  opB.pos (2) < opA.pos (5)? Yes →
+  Shift opA.pos forward by 1 →
+  Return {pos: 6} (A's insertion point moved forward)
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  transform(opA, opB) {
+    // If opB happened before opA's position, shift opA
+    if (opB.pos < opA.pos) {
+      // opB inserted a character before opA
+      // opA's position shifts forward by 1
+      return { ...opA, pos: opA.pos + 1 };
+    }
+    
+    // opB happened at or after opA, no shift needed
+    return { ...opA };
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **Same Position**: If \`opB.pos === opA.pos\`, typically no shift (or shift by 1, depends on tie-breaking)
+- **Multiple Operations**: In real OT, you'd transform against all concurrent operations
+- **Deletions**: If opB is a delete, shift backward instead of forward
+
+**Why This Matters:**
+- **Consistency**: All users see the same final document
+- **No Lost Edits**: Operations are preserved, just repositioned
+- **Real-Time Collaboration**: Enables Google Docs-style collaboration`,
         initialCode: `module.exports = {
   transform(opA, opB) {
     // Adjust opA.pos based on opB
@@ -1709,8 +3997,89 @@ Implement \`transform(opA, opB)\` to adjust opA based on the execution of opB.`,
         id: 's2',
         title: 'Document State',
         fileName: 'DocStore.js',
-        description: `**Task:** Manage the document string.
-Implement \`apply(op)\` which takes an operation (insert/delete) and mutates the current document string.`,
+        description: `### **Understanding Document State Management**
+
+The Document Store maintains the current state of the document (a string). It applies operations (insertions, deletions) to update the document.
+
+**Why String Mutation:**
+- Operations are applied sequentially
+- Each operation modifies the document
+- Final state is the result of all operations
+
+---
+
+### **Method: \`apply(op)\`**
+
+**Parameters:**
+- \`op\`: An operation object with:
+  - \`pos\`: Position to insert/delete (e.g., \`0\`, \`5\`)
+  - \`char\`: Character to insert (for insertions)
+  - \`type\`: Operation type (optional, might be inferred)
+
+**What You Need to Do:**
+
+1. **Get Current Document**:
+   - Access the \`doc\` variable (module-level state)
+
+2. **Insert Character**:
+   - Use string manipulation to insert at position
+   - JavaScript strings are immutable, so create a new string:
+     - \`doc = doc.slice(0, pos) + char + doc.slice(pos)\`
+   - This inserts \`char\` at position \`pos\`
+
+3. **Return Updated Document**:
+   - Return the modified document string
+
+**Example:**
+\`\`\`javascript
+// Initial: doc = ""
+apply({pos: 0, char: 'a'}) →
+  doc = "" + 'a' + "" = "a" →
+  return "a"
+
+// Current: doc = "a"
+apply({pos: 0, char: 'z'}) →
+  doc = "" + 'z' + "a" = "za" →
+  return "za"
+
+// Current: doc = "za"
+apply({pos: 1, char: 'b'}) →
+  doc = "z" + 'b' + "a" = "zba" →
+  return "zba"
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+let doc = "";
+
+module.exports = {
+  apply(op) {
+    // Insert character at position
+    const pos = op.pos;
+    const char = op.char;
+    
+    // Split string and insert
+    doc = doc.slice(0, pos) + char + doc.slice(pos);
+    
+    return doc;
+  },
+  
+  reset() {
+    doc = ""; // Helper for testing
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **Position 0**: Insert at beginning
+- **Position at End**: Insert at end (pos === doc.length)
+- **Position Beyond Length**: Handle gracefully (append to end or throw error)
+- **Empty Document**: Insert into empty string
+
+**Why This Structure:**
+- **Simple**: Easy to understand and implement
+- **Sequential**: Operations applied in order
+- **Stateful**: Document state persists between operations`,
         initialCode: `let doc = "";
 module.exports = {
   apply(op) {
@@ -1727,11 +4096,110 @@ module.exports = {
         id: 's3',
         title: 'Sync Server',
         fileName: 'Server.js',
-        description: `**Task:** Handle incoming edits.
-When \`onMessage(newOp)\` arrives:
-1. Transform the new operation against any operations that happened concurrently (simplified for this challenge).
-2. Apply the transformed op to the DocStore.
-3. Return the final document state.`,
+        description: `### **Understanding the Sync Server**
+
+The Sync Server is the **coordinator** that handles incoming edits from clients. It:
+1. Transforms operations to resolve conflicts
+2. Applies transformed operations to the document
+3. Maintains document consistency
+
+**Why Transformation is Needed:**
+- Multiple users edit simultaneously
+- Operations arrive out of order
+- Need to transform operations to maintain consistency
+
+---
+
+### **Method: \`onMessage(newOp)\`**
+
+**Parameters:**
+- \`newOp\`: A new operation from a client (e.g., \`{pos: 0, char: 'a'}\`)
+
+**What You Need to Do:**
+
+### **Step 1: Transform Against Concurrent Operations**
+
+1. **Identify Concurrent Operations**:
+   - In a real system, you'd track all operations that happened since this operation was created
+   - For this challenge, there's a mock concurrent operation: \`{pos: 0, char: 'z'}\`
+
+2. **Transform the New Operation**:
+   - Call \`Transform.transform(newOp, concurrentOp)\`
+   - This adjusts \`newOp.pos\` based on \`concurrentOp\`
+   - Returns the transformed operation
+
+**Example:**
+\`\`\`javascript
+// Concurrent op: {pos: 0, char: 'z'} (already applied)
+// New op: {pos: 0, char: 'a'}
+
+Transform.transform({pos: 0, char: 'a'}, {pos: 0, char: 'z'}) →
+  opB.pos (0) < opA.pos (0)? No (equal) →
+  Or if we shift on equal: opA.pos += 1 →
+  Return {pos: 1, char: 'a'} (shifted forward)
+\`\`\`
+
+---
+
+### **Step 2: Apply Transformed Operation**
+
+1. **Apply to Document Store**:
+   - Call \`Store.apply(transformedOp)\`
+   - This inserts the character at the transformed position
+   - Returns the updated document
+
+2. **Return Document State**:
+   - Return the final document string after applying the operation
+
+**Complete Flow:**
+\`\`\`javascript
+onMessage({pos: 0, char: 'a'}) →
+  Step 1: Transform against concurrent op {pos: 0, char: 'z'} →
+          Transform.transform({pos: 0, char: 'a'}, {pos: 0, char: 'z'}) →
+          Returns {pos: 1, char: 'a'} (shifted) →
+  Step 2: Apply transformed op →
+          Store.apply({pos: 1, char: 'a'}) →
+          Document: "z" + "a" = "za" →
+  Return: "za"
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+const Transform = require('./Transform.js');
+const Store = require('./DocStore.js');
+
+module.exports = {
+  onMessage(newOp) {
+    // Mock: assume 1 concurrent operation happened
+    const recentOp = { pos: 0, char: 'z' };
+    
+    // Step 1: Transform newOp against recentOp
+    const transformedOp = Transform.transform(newOp, recentOp);
+    
+    // Step 2: Apply transformed operation
+    const finalDoc = Store.apply(transformedOp);
+    
+    // Step 3: Return document state
+    return finalDoc;
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **No Concurrent Ops**: Transform returns original op, apply normally
+- **Multiple Concurrent Ops**: In real system, transform against all
+- **Deletions**: Handle delete operations (not just insertions)
+
+**Why This Pattern Works:**
+- **Consistency**: All clients see same document state
+- **Conflict Resolution**: Operations are transformed, not lost
+- **Real-Time**: Enables collaborative editing
+
+**Real-World Enhancements:**
+- **Vector Clocks**: Track operation ordering more accurately
+- **CRDTs**: Alternative to OT (Conflict-Free Replicated Data Types)
+- **Undo/Redo**: Track operation history for undo
+- **Presence**: Show where other users are editing`,
         initialCode: `const Transform = require('./Transform.js');
 const Store = require('./DocStore.js');
 
@@ -1779,9 +4247,84 @@ module.exports = {
         id: 's1',
         title: 'Double Entry Validator',
         fileName: 'Validator.js',
-        description: `**Task:** Ensure zero-sum integrity.
-Every transaction is a list of entries. The sum of all credits and debits must equal exactly ZERO.
-Implement \`validate(entries)\` to reject unbalanced transactions.`,
+        description: `### **Understanding Double-Entry Bookkeeping**
+
+In accounting and financial systems, every transaction must balance. **Double-Entry Bookkeeping** ensures:
+- Every debit has a corresponding credit
+- The sum of all entries equals exactly **ZERO**
+- This prevents errors, fraud, and data corruption
+
+**Why Zero-Sum:**
+- **Debits** (negative amounts) = money going out
+- **Credits** (positive amounts) = money coming in
+- Total must balance: debits + credits = 0
+
+**Example:**
+- Transfer $10 from Account A to Account B:
+  - Entry 1: Account A debited -$10 (money out)
+  - Entry 2: Account B credited +$10 (money in)
+  - Sum: -10 + 10 = 0 ✅
+
+---
+
+### **Method: \`validate(entries)\`**
+
+**Parameters:**
+- \`entries\`: An array of entry objects, each with an \`amount\` property
+  - Example: \`[{amount: -5}, {amount: 5}]\`
+  - Negative = debit, Positive = credit
+
+**What You Need to Do:**
+
+1. **Sum All Amounts**:
+   - Iterate through all entries
+   - Sum up all \`amount\` values
+   - Use \`reduce\` or a loop: \`sum = entries.reduce((sum, e) => sum + e.amount, 0)\`
+
+2. **Check if Sum Equals Zero**:
+   - Compare the sum to \`0\`
+   - **Important**: Use exact equality (accounting requires precision)
+   - Floating-point: Be careful with floating-point math (use integers or fixed-point)
+
+3. **Return Result**:
+   - Return \`true\` if sum === 0 (balanced transaction)
+   - Return \`false\` if sum !== 0 (unbalanced transaction - REJECT!)
+
+**Example:**
+\`\`\`javascript
+validate([{amount: -5}, {amount: 5}]) →
+  Sum = -5 + 5 = 0 →
+  Return: true ✅ (balanced)
+
+validate([{amount: -5}, {amount: 4}]) →
+  Sum = -5 + 4 = -1 →
+  Return: false ❌ (unbalanced - reject!)
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+module.exports = {
+  validate(entries) {
+    // Sum all amounts
+    const sum = entries.reduce((total, entry) => total + entry.amount, 0);
+    
+    // Check if sum equals zero (exact match required)
+    return sum === 0;
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **Empty Entries**: Sum = 0, return true (valid, but unusual)
+- **Single Entry**: Can't balance (sum !== 0), return false
+- **Floating Point**: Be careful with 0.1 + 0.2 !== 0.3 (use integers or fixed-point)
+- **Large Numbers**: Ensure no overflow
+
+**Why This is Critical:**
+- **Data Integrity**: Prevents corrupted financial data
+- **Audit Trail**: All transactions must balance
+- **Compliance**: Required for financial regulations
+- **Error Detection**: Catches bugs and fraud early`,
         initialCode: `module.exports = {
   validate(entries) {
     return false;
@@ -1796,9 +4339,83 @@ Implement \`validate(entries)\` to reject unbalanced transactions.`,
         id: 's2',
         title: 'Account Manager',
         fileName: 'Accounts.js',
-        description: `**Task:** Update balances.
-If the transaction is valid, apply each entry to the respective user's account balance.
-Return the new state of all modified accounts.`,
+        description: `### **Understanding Account Management**
+
+The Account Manager maintains account balances and applies transactions to update them. Each entry in a transaction affects a specific account.
+
+**Account Structure:**
+- Each account has a balance (starting balance)
+- Entries specify which account to modify
+- Entries have amounts (negative = debit, positive = credit)
+
+---
+
+### **Method: \`update(entries)\`**
+
+**Parameters:**
+- \`entries\`: An array of entry objects, each with:
+  - \`acct\`: Account identifier (e.g., \`"A"\`, \`"B"\`)
+  - \`amount\`: Amount to apply (e.g., \`-10\`, \`10\`)
+
+**What You Need to Do:**
+
+1. **Initialize Balances** (if needed):
+   - Maintain a \`balances\` object: \`{ "A": 100, "B": 0, ... }\`
+   - Starting balances are provided in the code
+
+2. **Apply Each Entry**:
+   - For each entry in the array:
+     - Get the account: \`const account = entry.acct\`
+     - Get the amount: \`const amount = entry.amount\`
+     - Update balance: \`balances[account] = (balances[account] || 0) + amount\`
+     - Use \`|| 0\` to handle accounts that don't exist yet
+
+3. **Return Updated Balances**:
+   - Return the \`balances\` object with all updated balances
+
+**Example:**
+\`\`\`javascript
+// Initial: balances = { A: 100, B: 0 }
+update([{acct: 'A', amount: -10}, {acct: 'B', amount: 10}]) →
+  Entry 1: balances['A'] = 100 + (-10) = 90
+  Entry 2: balances['B'] = 0 + 10 = 10
+  Return: { A: 90, B: 10 }
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+const balances = { A: 100, B: 0 };
+
+module.exports = {
+  update(entries) {
+    // Apply each entry to the respective account
+    for (const entry of entries) {
+      const account = entry.acct;
+      const amount = entry.amount;
+      
+      // Initialize account if it doesn't exist
+      if (balances[account] === undefined) {
+        balances[account] = 0;
+      }
+      
+      // Update balance
+      balances[account] += amount;
+    }
+    
+    return balances;
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **New Account**: Account doesn't exist → initialize to 0, then apply amount
+- **Negative Balance**: Allowed? (Depends on business rules - might allow overdraft)
+- **Zero Amount**: Entry with amount 0 → no change
+
+**Why This Structure:**
+- **Simple**: Direct balance updates
+- **Atomic**: In production, would be in a database transaction
+- **Traceable**: Can audit all balance changes`,
         initialCode: `const balances = { A: 100, B: 0 };
 module.exports = {
   update(entries) {
@@ -1814,12 +4431,155 @@ module.exports = {
         id: 's3',
         title: 'Transaction Engine',
         fileName: 'Engine.js',
-        description: `**Task:** Process transfers.
-Implement \`processTx(from, to, amount)\`:
-1. Construct the double-entry record (Debit sender, Credit receiver).
-2. Validate it.
-3. Apply to accounts.
-4. Return success/failure.`,
+        description: `### **Understanding the Transaction Engine**
+
+The Transaction Engine is the **orchestrator** that processes financial transfers. It:
+1. Creates the double-entry transaction
+2. Validates it (ensures it balances)
+3. Applies it to accounts
+4. Returns success or failure
+
+**Why This Orchestration:**
+- **Single Entry Point**: Simple API for transfers
+- **Validation**: Ensures transaction is valid before applying
+- **Atomicity**: All-or-nothing (in production, would use transactions)
+
+---
+
+### **Method: \`processTx(from, to, amount)\`**
+
+**Parameters:**
+- \`from\`: Source account (e.g., \`"A"\`)
+- \`to\`: Destination account (e.g., \`"B"\`)
+- \`amount\`: Amount to transfer (e.g., \`10\`)
+
+**What You Need to Do:**
+
+### **Step 1: Construct Double-Entry Record**
+
+1. **Create Two Entries**:
+   - **Entry 1 (Debit)**: \`{acct: from, amount: -amount}\`
+     - Negative amount = debit (money going out of source)
+   - **Entry 2 (Credit)**: \`{acct: to, amount: amount}\`
+     - Positive amount = credit (money coming into destination)
+
+2. **Combine into Transaction**:
+   - Create array: \`[{acct: from, amount: -amount}, {acct: to, amount: amount}]\`
+   - This represents the complete double-entry transaction
+
+**Example:**
+\`\`\`javascript
+processTx('A', 'B', 10) →
+  Entry 1: {acct: 'A', amount: -10} (A debited $10)
+  Entry 2: {acct: 'B', amount: 10} (B credited $10)
+  Transaction: [{acct: 'A', amount: -10}, {acct: 'B', amount: 10}]
+\`\`\`
+
+---
+
+### **Step 2: Validate Transaction**
+
+1. **Call Validator**:
+   - Use \`Validator.validate(entries)\` to check if transaction balances
+   - This ensures sum of all amounts equals zero
+
+2. **Check Result**:
+   - If validation fails, return \`"failure"\` immediately
+   - Don't apply an invalid transaction!
+
+**Example:**
+\`\`\`javascript
+// Transaction: [{amount: -10}, {amount: 10}]
+Validator.validate([{amount: -10}, {amount: 10}]) →
+  Sum = -10 + 10 = 0 →
+  Return: true ✅
+\`\`\`
+
+---
+
+### **Step 3: Apply to Accounts**
+
+1. **Call Account Manager**:
+   - Use \`Accounts.update(entries)\` to apply the transaction
+   - This updates the balances of both accounts
+
+2. **Transaction is Complete**:
+   - Both accounts have been updated
+   - Money has been transferred
+
+**Example:**
+\`\`\`javascript
+// Before: { A: 100, B: 0 }
+Accounts.update([{acct: 'A', amount: -10}, {acct: 'B', amount: 10}]) →
+  A: 100 + (-10) = 90
+  B: 0 + 10 = 10
+  Return: { A: 90, B: 10 }
+\`\`\`
+
+---
+
+### **Step 4: Return Result**
+
+1. **Return Success**:
+   - If validation passed and update succeeded, return \`"success"\`
+
+2. **Return Failure**:
+   - If validation failed, return \`"failure"\`
+   - In production, you might also handle update failures
+
+**Complete Flow:**
+\`\`\`javascript
+processTx('A', 'B', 10) →
+  Step 1: Create entries [{acct: 'A', amount: -10}, {acct: 'B', amount: 10}] →
+  Step 2: Validate → sum = 0 → true ✅ →
+  Step 3: Update accounts → { A: 90, B: 10 } →
+  Step 4: Return "success"
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+const Validator = require('./Validator.js');
+const Accounts = require('./Accounts.js');
+
+module.exports = {
+  processTx(from, to, amount) {
+    // Step 1: Construct double-entry record
+    const entries = [
+      { acct: from, amount: -amount }, // Debit sender
+      { acct: to, amount: amount }      // Credit receiver
+    ];
+    
+    // Step 2: Validate
+    if (!Validator.validate(entries)) {
+      return "failure"; // Unbalanced transaction
+    }
+    
+    // Step 3: Apply to accounts
+    Accounts.update(entries);
+    
+    // Step 4: Return success
+    return "success";
+  }
+};
+\`\`\`
+
+**Edge Cases:**
+- **Invalid Amount**: Negative or zero amount? (Handle gracefully)
+- **Same Account**: Transfer from A to A? (Valid but pointless)
+- **Insufficient Balance**: In production, check balance before debiting
+- **Validation Failure**: Don't apply transaction, return failure
+
+**Why This Pattern is Critical:**
+- **Financial Integrity**: All transactions must balance
+- **Audit Trail**: Complete record of all transfers
+- **Error Prevention**: Validation catches errors before applying
+- **Compliance**: Required for financial regulations
+
+**Real-World Enhancements:**
+- **Balance Checks**: Verify sufficient funds before transfer
+- **Transaction IDs**: Track each transaction uniquely
+- **Rollback**: If update fails, rollback changes
+- **Logging**: Log all transactions for audit`,
         initialCode: `const Validator = require('./Validator.js');
 const Accounts = require('./Accounts.js');
 
@@ -1877,9 +4637,58 @@ To handle this load, we split the counter into \`N\` smaller counters (shards).
         id: 's1',
         title: 'Shard Selector',
         fileName: 'ShardRouter.js',
-        description: `**Task:** Distribute the load.
-Instead of writing to key 'likes:video_1', we will write to 'likes:video_1:0', 'likes:video_1:1'... 'likes:video_1:N'.
-Implement \`getShardKey(counterName, numShards)\` to randomly select one of the N shards for a write operation.`,
+        description: `### **Understanding Shard Selection**
+
+In a sharded counter system, instead of writing to a single key like \`likes:video_123\`, we split the counter across multiple shards: \`likes:video_123:0\`, \`likes:video_123:1\`, ... \`likes:video_123:N-1\`.
+
+**Why Random Selection?**
+- **Load Balancing**: Random distribution ensures writes are spread evenly across all shards
+- **Avoiding Hotspots**: If we always wrote to shard 0, it would become a bottleneck
+- **Scalability**: As load increases, we can add more shards without changing the selection logic
+
+---
+
+### **Method: \`getShardKey(counterName, numShards)\`**
+
+**Parameters:**
+- \`counterName\`: The base name of the counter (e.g., \`"likes"\` or \`"video_123"\`)
+- \`numShards\`: The total number of shards (e.g., \`5\` means shards 0-4)
+
+**What You Need to Do:**
+
+1. **Generate a Random Shard Index**:
+   - Use \`Math.random()\` to generate a number between 0 and 1
+   - Multiply by \`numShards\` to get a number between 0 and \`numShards\`
+   - Use \`Math.floor()\` to convert to an integer between 0 and \`numShards - 1\`
+   - Example: \`Math.floor(Math.random() * numShards)\` gives you 0, 1, 2, ..., or numShards-1
+
+2. **Construct the Shard Key**:
+   - Format: \`"{counterName}:{shardIndex}"\`
+   - Example: If \`counterName = "likes"\` and shard index is \`3\`, return \`"likes:3"\`
+
+**Edge Cases:**
+- What if \`numShards\` is 0 or negative? (Handle gracefully - maybe return the base name or throw an error)
+- What if \`counterName\` is empty? (Still valid, just return \`":0"\` or similar)
+
+**Example Flow:**
+\`\`\`javascript
+getShardKey('likes', 5) → might return 'likes:0', 'likes:1', 'likes:2', 'likes:3', or 'likes:4'
+// Each call has equal probability of selecting any shard
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+getShardKey(name, numShards) {
+  const shardIndex = Math.floor(Math.random() * numShards);
+  return \`\${name}:\${shardIndex}\`;
+}
+\`\`\`
+
+**Why This Works:**
+- Each write operation randomly selects a shard
+- Over many writes, the distribution becomes uniform
+- No single shard becomes overloaded
+- The randomness ensures no predictable patterns that could cause hotspots`,
         initialCode: `module.exports = {
   getShardKey(name, numShards) {
     // Return "name:0" to "name:numShards-1"
@@ -1899,10 +4708,80 @@ Implement \`getShardKey(counterName, numShards)\` to randomly select one of the 
         id: 's2',
         title: 'Increment Logic',
         fileName: 'CounterService.js',
-        description: `**Task:** Perform the high-speed write.
-1. Determine the shard key.
-2. Use the atomic \`system.db.incr(key)\` operation to increment that specific shard.
-3. This removes the single-row bottleneck.`,
+        description: `### **Understanding High-Speed Writes**
+
+Now that we can select a shard, we need to actually increment it. The key insight is using **atomic operations** to avoid race conditions and ensure correctness.
+
+**Why Atomic Operations Matter:**
+- Multiple requests might try to increment the same shard simultaneously
+- Without atomicity, you could lose increments (read-modify-write race conditions)
+- \`system.db.incr(key)\` is atomic: it reads, increments, and writes in a single operation
+
+---
+
+### **Method: \`increment(counterName)\`**
+
+**Parameters:**
+- \`counterName\`: The base name of the counter (e.g., \`"video_123"\`)
+
+**What You Need to Do:**
+
+1. **Import the Router**:
+   - Use \`require('./ShardRouter.js')\` to get access to the shard selection logic
+   - You'll need to know how many shards exist (typically a constant like \`100\` or passed as a parameter)
+
+2. **Select a Shard**:
+   - Call \`Router.getShardKey(counterName, numShards)\` to get a random shard key
+   - This gives you something like \`"video_123:47"\`
+
+3. **Perform Atomic Increment**:
+   - Call \`system.db.incr(shardKey)\` to atomically increment that shard
+   - This operation:
+     - Reads the current value (or 0 if it doesn't exist)
+     - Increments it by 1
+     - Writes it back
+     - Returns the new value
+     - All in a single atomic operation (no race conditions!)
+
+4. **Return the Shard Key** (optional, but useful for debugging):
+   - Return the shard key that was incremented
+   - This helps verify that writes are being distributed
+
+**Edge Cases:**
+- What if \`system.db.incr\` fails? (Handle errors gracefully)
+- What if the shard key doesn't exist? (\`incr\` typically initializes to 0, then increments to 1)
+- What if \`numShards\` needs to be configurable? (Consider making it a parameter or constant)
+
+**Example Flow:**
+\`\`\`javascript
+// First increment
+increment('video_123') → selects 'video_123:23' → incr('video_123:23') → returns 'video_123:23'
+
+// Second increment (might select different shard)
+increment('video_123') → selects 'video_123:67' → incr('video_123:67') → returns 'video_123:67'
+
+// Third increment (might select same or different shard)
+increment('video_123') → selects 'video_123:23' → incr('video_123:23') → returns 'video_123:23'
+// Now shard 23 has value 2, shard 67 has value 1
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+const Router = require('./ShardRouter.js');
+const NUM_SHARDS = 100; // or make it configurable
+
+async increment(counterName) {
+  const shardKey = Router.getShardKey(counterName, NUM_SHARDS);
+  await system.db.incr(shardKey);
+  return shardKey;
+}
+\`\`\`
+
+**Why This Solves the Problem:**
+- **No Single Bottleneck**: Writes are distributed across 100 shards instead of 1 row
+- **Atomic Operations**: No lost increments due to race conditions
+- **High Throughput**: 100 shards can handle ~100x more writes than a single row
+- **Scalability**: Can increase \`NUM_SHARDS\` as load grows`,
         initialCode: `const Router = require('./ShardRouter.js');
 module.exports = {
   async increment(counterName) {
@@ -1918,9 +4797,96 @@ module.exports = {
         id: 's3',
         title: 'Aggregator',
         fileName: 'Aggregator.js',
-        description: `**Task:** Read the total count.
-Since the count is split across 100 shards, reading the total requires "Scatter-Gather".
-Use \`system.db.scan(prefix)\` to find all shard keys for the counter and sum their values.`,
+        description: `### **Understanding Scatter-Gather Reads**
+
+When you need to read the total count, you can't just read one key anymore. The count is **distributed** across multiple shards, so you need to:
+1. **Scatter**: Query all shards for this counter
+2. **Gather**: Sum up all the values
+
+This is the trade-off: writes are fast (single shard), but reads require aggregating multiple shards.
+
+---
+
+### **Method: \`getTotal(counterName)\`**
+
+**Parameters:**
+- \`counterName\`: The base name of the counter (e.g., \`"video_123"\`)
+
+**What You Need to Do:**
+
+1. **Build the Prefix**:
+   - All shard keys for a counter follow the pattern: \`"{counterName}:0"\`, \`"{counterName}:1"\`, etc.
+   - The prefix is \`"{counterName}:"\` (the base name followed by a colon)
+   - Example: For \`counterName = "video_123"\`, prefix is \`"video_123:"\`
+
+2. **Scan for All Shard Keys**:
+   - Use \`system.db.scan(prefix)\` to find all keys that start with the prefix
+   - This returns an object/map where:
+     - **Keys** are the full shard keys (e.g., \`"video_123:0"\`, \`"video_123:47"\`)
+     - **Values** are the counts stored in each shard
+   - Example result: \`{ "video_123:0": 150, "video_123:1": 200, "video_123:47": 75, ... }\`
+
+3. **Sum All Values**:
+   - Iterate through all the values returned by \`scan\`
+   - Sum them up to get the total count
+   - Handle edge cases:
+     - Empty result (no shards exist yet) → return 0
+     - Some shards might not exist (they'll be missing from the scan result, which is fine)
+
+4. **Return the Total**:
+   - Return the sum as a number
+
+**Edge Cases:**
+- What if no shards exist yet? (Return 0)
+- What if \`scan\` returns an empty object? (Return 0)
+- What if some shards have never been written to? (They won't appear in scan, which is correct - they're 0)
+- What if \`scan\` is expensive? (In production, you might cache this or use a background aggregation)
+
+**Example Flow:**
+\`\`\`javascript
+// After several increments distributed across shards:
+// Shard 0: 150 likes
+// Shard 1: 200 likes  
+// Shard 47: 75 likes
+// Shard 99: 100 likes
+
+getTotal('video_123') → 
+  scan('video_123:') → 
+    { 'video_123:0': 150, 'video_123:1': 200, 'video_123:47': 75, 'video_123:99': 100 } →
+  sum = 150 + 200 + 75 + 100 = 525 →
+  return 525
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+async getTotal(name) {
+  const prefix = \`\${name}:\`;
+  const shards = await system.db.scan(prefix);
+  
+  // Sum all values
+  let total = 0;
+  for (const key in shards) {
+    total += shards[key];
+  }
+  
+  return total;
+}
+\`\`\`
+
+**Performance Considerations:**
+- **Read Cost**: Reading requires scanning all shards (O(N) where N = numShards)
+- **Write Cost**: Writing is O(1) - just one shard
+- **Trade-off**: This is acceptable because reads are typically less frequent than writes
+- **Optimization**: In production, you might:
+  - Cache the total and update it asynchronously
+  - Use a background job to pre-aggregate
+  - Use a separate "summary" shard that's updated periodically
+
+**Why This Pattern Works:**
+- **High Write Throughput**: Writes are distributed, no contention
+- **Accurate Reads**: Reads aggregate all shards, giving the true total
+- **Scalability**: Can add more shards as write load increases
+- **Consistency**: Eventually consistent (reads might be slightly stale if a write just happened, but that's usually acceptable)`,
         initialCode: `module.exports = {
   async getTotal(name) {
     // const shards = await system.db.scan(name + ":");
@@ -1975,10 +4941,90 @@ Imagine a ring (0 to 360 degrees, or a large integer space).
         id: 's1',
         title: 'Ring Structure',
         fileName: 'Ring.js',
-        description: `**Task:** Map nodes to a ring.
-Imagine a circle (0 to 1000).
-1. Hash the Node Name (e.g. "Server A") to an integer.
-2. Place it on the ring (sorted array).`,
+        description: `### **Understanding the Consistent Hashing Ring**
+
+Consistent hashing uses a **ring** (circular space) to map both servers and keys. Think of it like a clock face:
+- The ring spans from 0 to 1000 (or any large number)
+- Each server is placed at a specific position on this ring
+- Each data key is also hashed to a position on the ring
+- To find which server owns a key, you walk clockwise from the key's position until you hit a server
+
+**Why a Ring?**
+- When a server is added, only keys between the previous server and the new server need to move
+- When a server is removed, only its keys need to move to the next server
+- This minimizes data movement compared to simple modulo hashing
+
+---
+
+### **The Ring Data Structure**
+
+You need to maintain a **sorted array** of server positions. Each position is a number between 0 and 1000 (the ring size).
+
+**Key Operations:**
+1. **Add a Node**: Hash the node name, get a position, insert it into the sorted array
+2. **Get the Ring**: Return the sorted array of positions
+
+---
+
+### **Method 1: \`addNode(node)\`**
+
+**Parameters:**
+- \`node\`: The name of the server (e.g., \`"Server A"\`, \`"Node-1"\`)
+
+**What You Need to Do:**
+
+1. **Hash the Node Name**:
+   - Use the provided \`simpleHash(str)\` function to convert the node name to an integer
+   - This function:
+     - Iterates through each character
+     - Accumulates character codes
+     - Returns \`hash % 1000\` to get a position between 0 and 999
+   - Example: \`simpleHash("Server A")\` might return \`347\`
+
+2. **Insert into Sorted Array**:
+   - Add the hash value to the \`ring\` array
+   - **Keep the array sorted** (important for efficient lookups later)
+   - You can:
+     - Push the value, then sort: \`ring.push(hash); ring.sort((a, b) => a - b);\`
+     - Or use binary search to find insertion point (more efficient for large rings)
+
+3. **Handle Duplicates** (optional but good practice):
+   - If a node is added twice, you might want to ignore it or update it
+   - Hash collisions (different nodes hashing to same position) are rare but possible
+
+**Edge Cases:**
+- What if the same node is added twice? (Consider checking if it exists first)
+- What if two nodes hash to the same position? (Handle collision - maybe add a small offset or use a different strategy)
+- What if the hash is 0? (Valid position, handle normally)
+
+**Example Flow:**
+\`\`\`javascript
+addNode('Server A') → simpleHash('Server A') = 347 → ring = [347]
+addNode('Server B') → simpleHash('Server B') = 892 → ring = [347, 892]
+addNode('Server C') → simpleHash('Server C') = 125 → ring = [125, 347, 892]
+// Ring is always sorted!
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+addNode(node) {
+  const position = simpleHash(node);
+  ring.push(position);
+  ring.sort((a, b) => a - b); // Keep sorted ascending
+}
+\`\`\`
+
+---
+
+### **Method 2: \`getRing()\`**
+
+**What You Need to Do:**
+- Simply return the \`ring\` array
+- This allows other modules (like the Router) to see the current state of the ring
+
+**Why This Matters:**
+- The Router needs to see where all nodes are positioned
+- It uses this sorted array to find the "next" server for a given key`,
         initialCode: `const ring = [];
 function simpleHash(str) {
   let hash = 0;
@@ -2000,11 +5046,107 @@ module.exports = {
         id: 's2',
         title: 'Node Lookup',
         fileName: 'Router.js',
-        description: `**Task:** Find the responsible node.
-To find where "User_123" lives:
-1. Hash "User_123" to get position P.
-2. Walk clockwise on the ring to find the first Node with position >= P.
-3. If you reach the end, wrap around to the first Node.`,
+        description: `### **Understanding Node Lookup**
+
+Once nodes are placed on the ring, you need to find which node is responsible for a given key. The rule is simple: **walk clockwise from the key's position until you hit a node**.
+
+**The Algorithm:**
+1. Hash the key to get its position on the ring
+2. Find the first node (in clockwise order) that has a position >= the key's position
+3. If no such node exists (key is after the last node), wrap around to the first node
+
+---
+
+### **Method: \`getNode(key)\`**
+
+**Parameters:**
+- \`key\`: The data key you want to find a server for (e.g., \`"User_123"\`, \`"data_456"\`)
+
+**What You Need to Do:**
+
+1. **Get the Ring State**:
+   - Call \`Ring.getRing()\` to get the sorted array of node positions
+   - Example: \`[125, 347, 892]\`
+
+2. **Hash the Key**:
+   - Use \`simpleHash(key)\` to get the key's position on the ring
+   - Example: \`simpleHash("User_123")\` might return \`450\`
+
+3. **Find the Next Node (Clockwise)**:
+   - Iterate through the sorted ring array
+   - Find the first node position that is **>= the key's position**
+   - This is the node responsible for this key
+   - Example: If key position is \`450\` and ring is \`[125, 347, 892]\`:
+     - \`125 >= 450\`? No
+     - \`347 >= 450\`? No
+     - \`892 >= 450\`? Yes! → This is the responsible node
+
+4. **Handle Wrap-Around**:
+   - If no node is found (key position is greater than all node positions), wrap around
+   - Return the **first node** in the ring (the one at index 0)
+   - Example: If key position is \`950\` and ring is \`[125, 347, 892]\`:
+     - No node >= 950 exists
+     - Wrap around → return node at position \`125\`
+
+5. **Map Position Back to Node Name** (if needed):
+   - The ring stores positions, but you might need to return the actual node name
+   - You may need to maintain a mapping: \`position → nodeName\`
+   - Or, if the challenge expects just the position, return that
+
+**Edge Cases:**
+- What if the ring is empty? (Return null or handle gracefully)
+- What if the key hashes to exactly a node's position? (That node is responsible)
+- What if multiple keys hash to the same position? (They all go to the same node - this is fine)
+
+**Example Flow:**
+\`\`\`javascript
+// Ring: [125, 347, 892] (representing Server A, B, C)
+
+getNode('User_123') → 
+  hash = 450 →
+  find first node >= 450 →
+  892 >= 450? Yes! →
+  return node at position 892 (Server C)
+
+getNode('User_456') → 
+  hash = 50 →
+  find first node >= 50 →
+  125 >= 50? Yes! →
+  return node at position 125 (Server A)
+
+getNode('User_999') → 
+  hash = 950 →
+  find first node >= 950 →
+  None found →
+  wrap around →
+  return node at position 125 (Server A)
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+getNode(key) {
+  const sortedRing = Ring.getRing();
+  if (sortedRing.length === 0) return null;
+  
+  const keyPosition = simpleHash(key);
+  
+  // Find first node >= keyPosition
+  for (let i = 0; i < sortedRing.length; i++) {
+    if (sortedRing[i] >= keyPosition) {
+      return sortedRing[i]; // or map to node name
+    }
+  }
+  
+  // Wrap around: return first node
+  return sortedRing[0];
+}
+\`\`\`
+
+**Why This Works:**
+- **Consistent**: Same key always maps to same node (unless ring changes)
+- **Minimal Movement**: Adding/removing a node only affects keys in a small range
+- **Load Balancing**: Keys are distributed evenly across nodes (assuming good hash function)
+- **Efficient**: O(log N) with binary search, or O(N) with linear search (N = number of nodes)`,
         initialCode: `const Ring = require('./Ring.js');
 // reuse simpleHash from Ring or copy it
 function simpleHash(str) {
@@ -2028,10 +5170,98 @@ module.exports = {
         id: 's3',
         title: 'Virtual Nodes',
         fileName: 'VNodeManager.js',
-        description: `**Task:** Solve data skew.
-If we only have 2 nodes, one might get 90% of the ring.
-Solution: "Virtual Nodes". Map each physical server to K points on the ring (e.g. ServerA_1, ServerA_2...).
-Implement \`addPhysicalNode(node, k)\` to register these virtual points.`,
+        description: `### **Understanding the Data Skew Problem**
+
+With basic consistent hashing, if you only have 2 physical servers, the hash function might place them unevenly on the ring:
+- Server A at position 100
+- Server B at position 900
+
+This means Server A handles keys from 100-899 (800 positions), while Server B handles 900-99 (wrapped, ~200 positions). **Uneven load!**
+
+**The Solution: Virtual Nodes**
+Instead of placing each physical server once on the ring, place it **K times** at different positions:
+- Server A: positions 100, 250, 400, 550, 700 (K=5 virtual nodes)
+- Server B: positions 150, 300, 450, 600, 750 (K=5 virtual nodes)
+
+Now the load is much more evenly distributed!
+
+---
+
+### **Method: \`addPhysicalNode(node, k)\`**
+
+**Parameters:**
+- \`node\`: The name of the physical server (e.g., \`"Server A"\`)
+- \`k\`: The number of virtual nodes to create for this physical server (e.g., \`3\`, \`5\`, \`100\`)
+
+**What You Need to Do:**
+
+1. **Generate K Virtual Node Names**:
+   - For each \`i\` from \`0\` to \`k-1\`, create a virtual node name
+   - Format: \`"{node}_{i}"\` (e.g., \`"Server A_0"\`, \`"Server A_1"\`, ..., \`"Server A_{k-1}"\`)
+   - Example: If \`node = "Server A"\` and \`k = 3\`:
+     - \`"Server A_0"\`
+     - \`"Server A_1"\`
+     - \`"Server A_2"\`
+
+2. **Add Each Virtual Node to the Ring**:
+   - For each virtual node name, call \`Ring.addNode(virtualNodeName)\`
+   - This will hash each virtual node name and place it on the ring
+   - Since each name is different, they'll hash to different positions
+
+3. **Maintain Mapping** (if needed):
+   - You might want to track which virtual nodes belong to which physical node
+   - This helps when you need to remove a physical node (remove all its virtual nodes)
+   - Store: \`physicalNode → [virtualNode1, virtualNode2, ...]\`
+
+**Edge Cases:**
+- What if \`k\` is 0 or negative? (Handle gracefully - maybe default to 1 or throw error)
+- What if the same physical node is added twice? (Consider checking and skipping, or updating)
+- What if virtual node names collide? (Rare, but handle by ensuring unique names)
+
+**Example Flow:**
+\`\`\`javascript
+// Add Server A with 3 virtual nodes
+addPhysicalNode('Server A', 3) →
+  Creates: 'Server A_0', 'Server A_1', 'Server A_2' →
+  Hashes and adds each to ring →
+  Ring now has 3 positions for Server A
+
+// Add Server B with 3 virtual nodes  
+addPhysicalNode('Server B', 3) →
+  Creates: 'Server B_0', 'Server B_1', 'Server B_2' →
+  Hashes and adds each to ring →
+  Ring now has 6 total positions (3 for A, 3 for B)
+
+// Keys are now distributed more evenly!
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+const Ring = require('./Ring.js');
+
+addPhysicalNode(node, k) {
+  for (let i = 0; i < k; i++) {
+    const virtualNodeName = \`\${node}_\${i}\`;
+    Ring.addNode(virtualNodeName);
+    // Optionally: store mapping of virtualNodeName → node
+  }
+}
+\`\`\`
+
+**Why Virtual Nodes Work:**
+- **Better Load Distribution**: More points on the ring = more even distribution
+- **Flexibility**: Can give more powerful servers more virtual nodes (weighted distribution)
+- **Fault Tolerance**: If one virtual node's position is problematic, others compensate
+- **Standard Practice**: Used in production systems like DynamoDB, Cassandra, etc.
+
+**Choosing K:**
+- **Too Small** (K=1-10): May still have skew, especially with few physical nodes
+- **Good** (K=50-200): Good balance between distribution and overhead
+- **Too Large** (K=1000+): Diminishing returns, more memory/overhead
+
+**Real-World Example:**
+- DynamoDB uses ~150 virtual nodes per physical node
+- This ensures even distribution even with just 3-5 physical nodes`,
         initialCode: `const Ring = require('./Ring.js');
 module.exports = {
   addPhysicalNode(node, k) {
@@ -2089,10 +5319,161 @@ A **Coordinator** orchestrates the transaction with **Participants** (the banks)
         id: 's1',
         title: 'Participant',
         fileName: 'Participant.js',
-        description: `**Task:** Implement the Participant protocol.
-1. \`prepare(txId)\`: Lock the account. If already locked, vote "NO" (return false). If free, lock it and vote "YES" (return true).
-2. \`commit(txId)\`: Apply the change and unlock.
-3. \`abort(txId)\`: Just unlock (rollback).`,
+        description: `### **Understanding the Participant Role**
+
+In the Two-Phase Commit protocol, a **Participant** is a service (like a bank, database, or microservice) that holds resources and must participate in a distributed transaction. The Participant's job is to:
+
+1. **Lock resources** when asked to prepare
+2. **Vote** on whether it can commit the transaction
+3. **Execute or rollback** based on the Coordinator's final decision
+
+Think of it like a bank branch that must coordinate with other branches to complete a transfer. The branch must:
+- Reserve the money (lock) when asked
+- Confirm it can proceed (vote YES/NO)
+- Actually transfer or release the reservation based on the final decision
+
+---
+
+### **State Management: The Lock Registry**
+
+The Participant needs to track which transactions have locked which resources. In this implementation, you'll maintain a \`locks\` object that maps:
+- **Key**: Transaction ID (\`txId\`)
+- **Value**: Lock status (typically \`true\` for locked, or you could store more metadata)
+
+**Critical Rule**: A resource can only be locked by **one transaction at a time**. If a transaction tries to lock an already-locked resource, it must vote "NO".
+
+---
+
+### **Method 1: \`prepare(txId)\` - The Voting Phase**
+
+This is called by the Coordinator during **Phase 1** to ask: "Can you commit this transaction?"
+
+**What you need to do:**
+
+1. **Check if the resource is already locked**:
+   - Look in your \`locks\` object for the \`txId\`
+   - If the resource is locked by a **different transaction**, you must vote **NO** (return \`false\`)
+   - This prevents conflicts and ensures consistency
+
+2. **Lock the resource**:
+   - If the resource is free (not locked), add an entry to \`locks\` with \`txId\` as the key
+   - Set the lock status (e.g., \`locks[txId] = true\` or \`locks[txId] = 'prepared'\`)
+   - This "reserves" the resource for this transaction
+
+3. **Vote YES**:
+   - Return \`true\` to indicate you can commit
+   - At this point, you've locked the resource but **haven't committed yet**
+
+**Edge Cases to Handle:**
+- What if \`prepare\` is called twice for the same \`txId\`? (Idempotency: return the same vote)
+- What if the resource is locked by another transaction? (Vote NO)
+- What if the resource doesn't exist or is invalid? (Vote NO)
+
+**Example Flow:**
+\`\`\`javascript
+// First call: resource is free
+prepare('tx_123') → locks resource → returns true (YES)
+
+// Second call for same tx: already prepared
+prepare('tx_123') → returns true (idempotent)
+
+// Different transaction tries to lock same resource
+prepare('tx_456') → sees tx_123 has lock → returns false (NO)
+\`\`\`
+
+---
+
+### **Method 2: \`commit(txId)\` - The Execution Phase**
+
+This is called by the Coordinator during **Phase 2** if **all participants voted YES**. It means: "Everyone agreed, now actually do it."
+
+**What you need to do:**
+
+1. **Verify the transaction was prepared**:
+   - Check that \`txId\` exists in your \`locks\` object
+   - If not found, this is an error (can't commit what wasn't prepared)
+   - You might want to handle this gracefully or throw an error
+
+2. **Apply the actual change**:
+   - In a real system, this would update the database, transfer money, etc.
+   - For this challenge, you might need to track that the commit happened
+   - The key is: the change becomes **permanent** at this point
+
+3. **Release the lock**:
+   - Remove \`txId\` from the \`locks\` object
+   - This frees the resource for other transactions
+
+**Important**: Once you commit, the change is **permanent**. There's no going back (unless you implement compensation logic, which is beyond 2PC).
+
+**Example Flow:**
+\`\`\`javascript
+// After prepare('tx_123') returned true
+commit('tx_123') → applies change → removes lock → done
+\`\`\`
+
+---
+
+### **Method 3: \`abort(txId)\` - The Rollback Phase**
+
+This is called by the Coordinator during **Phase 2** if **any participant voted NO** or if there was a timeout/failure. It means: "Something went wrong, undo everything."
+
+**What you need to do:**
+
+1. **Check if the transaction was prepared**:
+   - Look for \`txId\` in \`locks\`
+   - If found, it means you locked the resource and need to release it
+   - If not found, you might not have prepared (or already committed/aborted) - handle gracefully
+
+2. **Release the lock**:
+   - Remove \`txId\` from the \`locks\` object
+   - This is the **rollback** - you're undoing the preparation
+   - No actual changes are applied (since you only locked, not committed)
+
+**Key Point**: Abort is **idempotent**. You can call it multiple times safely. If the lock is already released, that's fine.
+
+**Example Flow:**
+\`\`\`javascript
+// After prepare('tx_123') returned true
+abort('tx_123') → releases lock → no changes applied
+
+// Called again (idempotent)
+abort('tx_123') → lock already released → no-op
+\`\`\`
+
+---
+
+### **Implementation Checklist**
+
+Your implementation should:
+
+✅ **Maintain a lock registry** (\`locks\` object) to track which transactions have locked resources
+
+✅ **Handle \`prepare(txId)\`**:
+   - Check if resource is already locked by another transaction → vote NO
+   - If free, lock it and vote YES
+   - Handle idempotency (same txId called twice)
+
+✅ **Handle \`commit(txId)\`**:
+   - Verify the transaction was prepared
+   - Apply the change (or mark as committed)
+   - Release the lock
+
+✅ **Handle \`abort(txId)\`**:
+   - Release the lock if it exists
+   - Make it idempotent (safe to call multiple times)
+
+✅ **Prevent race conditions**: Ensure that checking and setting locks is atomic (in a real system, you'd use database transactions or mutexes; here, JavaScript's single-threaded nature helps, but be careful with async operations)
+
+---
+
+### **Why This Matters**
+
+The Participant is the **foundation** of 2PC. If participants don't properly manage locks:
+- **Deadlocks** can occur (two transactions waiting for each other)
+- **Inconsistencies** can happen (one service commits, another doesn't)
+- **Data corruption** is possible (overlapping transactions modifying the same resource)
+
+Your implementation must be **correct**, **idempotent**, and **safe** for the Coordinator to rely on.`,
         initialCode: `const locks = {}; // txId -> status
 module.exports = {
   async prepare(txId) {
@@ -2110,12 +5491,180 @@ module.exports = {
         id: 's2',
         title: 'Coordinator',
         fileName: 'Coordinator.js',
-        description: `**Task:** Implement the Coordinator.
-It manages the transaction lifecycle:
-1. **Phase 1 (Voting):** Ask all participants to \`prepare()\`.
-2. **Phase 2 (Decision):**
-   - If *everyone* voted YES -> tell everyone to \`commit()\`.
-   - If *anyone* voted NO (or timed out) -> tell everyone to \`abort()\`.`,
+        description: `### **Understanding the Coordinator Role**
+
+The **Coordinator** is the orchestrator of the Two-Phase Commit protocol. It doesn't hold any data itself, but it coordinates all participants to ensure atomicity across the distributed transaction.
+
+**The Coordinator's Responsibilities:**
+1. **Initiate the Transaction**: Start the 2PC process for a given transaction ID
+2. **Collect Votes**: Ask all participants if they can commit (Phase 1)
+3. **Make Decision**: Based on votes, decide to commit or abort
+4. **Execute Decision**: Tell all participants to commit or abort (Phase 2)
+
+Think of it like a wedding coordinator: they don't get married, but they ensure everyone (bride, groom, officiant) is ready and coordinated.
+
+---
+
+### **Method: \`runTransaction(txId, participants)\`**
+
+**Parameters:**
+- \`txId\`: A unique transaction identifier (e.g., \`"tx_100"\`)
+- \`participants\`: An array of participant objects, each with \`prepare\`, \`commit\`, and \`abort\` methods
+
+**What You Need to Do:**
+
+---
+
+### **Phase 1: Voting (Prepare Phase)**
+
+1. **Ask All Participants to Prepare**:
+   - Iterate through each participant in the \`participants\` array
+   - Call \`await participant.prepare(txId)\` for each participant
+   - Collect the votes (each \`prepare\` returns \`true\` for YES or \`false\` for NO)
+   - Store the results in an array or track them
+
+2. **Handle Errors and Timeouts**:
+   - If a participant throws an error or times out, treat it as a **NO vote**
+   - Use try-catch blocks to handle failures gracefully
+   - In production, you'd implement actual timeouts; here, just catch errors
+
+3. **Check All Votes**:
+   - If **ALL** participants voted YES (all returned \`true\`), proceed to commit
+   - If **ANY** participant voted NO (returned \`false\`) or failed, proceed to abort
+
+**Example:**
+\`\`\`javascript
+// Phase 1
+const votes = [];
+for (const participant of participants) {
+  try {
+    const vote = await participant.prepare(txId);
+    votes.push(vote);
+  } catch (error) {
+    votes.push(false); // Error = NO vote
+  }
+}
+
+const allYes = votes.every(vote => vote === true);
+\`\`\`
+
+---
+
+### **Phase 2: Decision and Execution**
+
+**If All Voted YES (Commit Path):**
+
+1. **Tell Everyone to Commit**:
+   - Iterate through all participants
+   - Call \`await participant.commit(txId)\` for each
+   - Handle errors (a commit failure is serious, but still try to commit others)
+
+2. **Return Success**:
+   - Return \`"COMMITTED"\` to indicate the transaction succeeded
+
+**If Anyone Voted NO (Abort Path):**
+
+1. **Tell Everyone to Abort**:
+   - Iterate through all participants
+   - Call \`await participant.abort(txId)\` for each
+   - This releases locks and rolls back any prepared state
+   - Handle errors gracefully (abort should be idempotent)
+
+2. **Return Failure**:
+   - Return \`"ABORTED"\` to indicate the transaction was rolled back
+
+**Example:**
+\`\`\`javascript
+if (allYes) {
+  // Phase 2: Commit
+  for (const participant of participants) {
+    try {
+      await participant.commit(txId);
+    } catch (error) {
+      // Log error, but continue committing others
+    }
+  }
+  return "COMMITTED";
+} else {
+  // Phase 2: Abort
+  for (const participant of participants) {
+    try {
+      await participant.abort(txId);
+    } catch (error) {
+      // Log error, abort should be idempotent
+    }
+  }
+  return "ABORTED";
+}
+\`\`\`
+
+---
+
+### **Edge Cases and Error Handling**
+
+1. **Empty Participants Array**:
+   - If no participants, the transaction can't do anything
+   - Consider returning \`"COMMITTED"\` (nothing to commit) or \`"ABORTED"\` (invalid state)
+
+2. **Partial Failures in Phase 2**:
+   - If some participants commit but others fail, you have an inconsistent state
+   - In production, you'd need recovery mechanisms
+   - For this challenge, try your best to commit/abort all, but handle errors
+
+3. **Network Partitions**:
+   - If a participant is unreachable, treat it as a NO vote
+   - Always abort if you can't reach everyone (safety first)
+
+4. **Idempotency**:
+   - If \`runTransaction\` is called twice with the same \`txId\`, what happens?
+   - Participants should handle idempotency, but the coordinator should too
+
+---
+
+### **Complete Implementation Flow**
+
+\`\`\`javascript
+async runTransaction(txId, participants) {
+  // Phase 1: Voting
+  const votes = [];
+  for (const p of participants) {
+    try {
+      votes.push(await p.prepare(txId));
+    } catch {
+      votes.push(false); // Error = NO
+    }
+  }
+  
+  const allYes = votes.every(v => v === true);
+  
+  // Phase 2: Decision
+  if (allYes) {
+    for (const p of participants) {
+      try { await p.commit(txId); } catch {}
+    }
+    return "COMMITTED";
+  } else {
+    for (const p of participants) {
+      try { await p.abort(txId); } catch {}
+    }
+    return "ABORTED";
+  }
+}
+\`\`\`
+
+---
+
+### **Why This Protocol Works**
+
+- **Atomicity**: Either all commit or all abort - no partial states
+- **Consistency**: All participants agree on the outcome
+- **Safety**: If any participant can't commit, everyone aborts
+- **Blocking**: If the coordinator crashes, participants can be stuck (this is a known limitation of 2PC)
+
+**Real-World Considerations:**
+- 2PC is **blocking** - if the coordinator crashes, participants wait
+- Alternatives like **3PC** (Three-Phase Commit) or **Saga Pattern** are non-blocking but more complex
+- Used in distributed databases, microservices coordination, and distributed transactions`,
         initialCode: `module.exports = {
   async runTransaction(txId, participants) {
     // Phase 1: Prepare
@@ -2174,11 +5723,132 @@ Example: \`cursor = base64({ friends_last_id: 101, groups_last_id: 55, ads_last_
         id: 's1',
         title: 'Merge Sorted Streams',
         fileName: 'Merger.js',
-        description: `**Task:** Algorithmically merge multiple sorted arrays.
-Implement \`merge(streams)\`.
-- \`streams\` is an array of arrays: \`[[{id:10, t:100}, {id:8, t:90}], [{id:9, t:95}]]\`.
-- All inputs are sorted by Time (descending).
-- Return a single flattened array sorted by Time (descending).`,
+        description: `### **Understanding the Merge Problem**
+
+You have multiple sorted streams (arrays) that need to be combined into one sorted stream. This is a classic algorithm problem that appears in:
+- **Merge K Sorted Lists** (LeetCode)
+- **External Sorting** (merging sorted chunks)
+- **Feed Aggregation** (combining posts from multiple sources)
+
+**The Challenge:**
+- You have K sorted arrays
+- Each array is sorted by time (descending: newest first)
+- You need to merge them into one array, still sorted by time (descending)
+- Must be efficient: O(N log K) where N = total items, K = number of streams
+
+---
+
+### **Method: \`merge(streams)\`**
+
+**Parameters:**
+- \`streams\`: An array of arrays, where each inner array contains objects with \`{id, t}\` (id and timestamp)
+- Example: \`[[{id:10, t:100}, {id:8, t:90}], [{id:9, t:95}]]\`
+- All inner arrays are sorted by \`t\` (time) in **descending order**
+
+**What You Need to Do:**
+
+### **Approach 1: Priority Queue / Heap (Optimal)**
+
+1. **Initialize a Priority Queue** (or use array-based min-heap):
+   - Store tuples of \`(item, streamIndex, itemIndex)\`
+   - Priority is based on timestamp (larger timestamp = higher priority for descending order)
+   - In JavaScript, you can use an array and maintain heap property, or use a library
+
+2. **Add First Item from Each Stream**:
+   - For each stream, if it's not empty, add its first item to the priority queue
+   - Track which stream it came from and its index in that stream
+
+3. **Extract and Merge**:
+   - While the priority queue is not empty:
+     - Extract the item with the **highest timestamp** (most recent)
+     - Add it to the result array
+     - If that stream has more items, add the next item from that stream to the queue
+
+4. **Return Result**:
+   - Return the merged, sorted array
+
+**Time Complexity**: O(N log K) where N = total items, K = number of streams
+
+### **Approach 2: Simple Array-Based (Easier, but O(NK))**
+
+1. **Track Current Index for Each Stream**:
+   - Maintain an array of current indices: \`[0, 0, 0, ...]\` (one per stream)
+
+2. **Repeatedly Find Maximum**:
+   - While there are items left:
+     - Look at the current item in each stream (using the indices)
+     - Find the one with the **highest timestamp**
+     - Add it to result
+     - Increment that stream's index
+
+3. **Return Result**
+
+**Time Complexity**: O(NK) - simpler but slower for many streams
+
+---
+
+### **Implementation Hint (Simple Approach):**
+
+\`\`\`javascript
+merge(streams) {
+  const result = [];
+  const indices = new Array(streams.length).fill(0);
+  
+  while (true) {
+    let maxTime = -1;
+    let maxStreamIndex = -1;
+    
+    // Find stream with highest timestamp at current position
+    for (let i = 0; i < streams.length; i++) {
+      const idx = indices[i];
+      if (idx < streams[i].length) {
+        const item = streams[i][idx];
+        if (item.t > maxTime) {
+          maxTime = item.t;
+          maxStreamIndex = i;
+        }
+      }
+    }
+    
+    // No more items
+    if (maxStreamIndex === -1) break;
+    
+    // Add item and advance index
+    result.push(streams[maxStreamIndex][indices[maxStreamIndex]]);
+    indices[maxStreamIndex]++;
+  }
+  
+  return result;
+}
+\`\`\`
+
+---
+
+### **Edge Cases:**
+
+- **Empty Streams**: If a stream is empty, skip it
+- **All Streams Empty**: Return empty array
+- **Single Stream**: Just return that stream (already sorted)
+- **Duplicate Timestamps**: Handle gracefully (both items should appear, order between them doesn't matter)
+
+**Example Flow:**
+\`\`\`javascript
+streams = [
+  [{id:10, t:100}, {id:8, t:90}],  // Stream 0
+  [{id:9, t:95}]                    // Stream 1
+]
+
+merge(streams) →
+  Compare t:100 vs t:95 → 100 wins → add {id:10, t:100}
+  Compare t:90 vs t:95 → 95 wins → add {id:9, t:95}
+  Compare t:90 vs (none) → 90 wins → add {id:8, t:90}
+  Result: [{id:10, t:100}, {id:9, t:95}, {id:8, t:90}]
+\`\`\`
+
+**Why This Matters:**
+- **Feed Aggregation**: Combining posts from Friends, Groups, Ads into one timeline
+- **Search Results**: Merging results from multiple indexes
+- **Log Aggregation**: Combining logs from multiple services in time order`,
         initialCode: `module.exports = {
   merge(streams) {
     // Efficiently merge K sorted arrays
@@ -2197,11 +5867,123 @@ Implement \`merge(streams)\`.
         id: 's2',
         title: 'Cursor Tokenizer',
         fileName: 'Tokenizer.js',
-        description: `**Task:** State Management.
-We can't use a simple DB offset because we are reading from 3 different sources.
-Our "Global Cursor" must encode the state of *each* sub-stream.
-- Implement \`encode(cursors)\`: takes \`{ friends: 'id_a', groups: 'id_b', ads: 'id_c' }\` and returns a Base64 string.
-- Implement \`decode(token)\`: reverses it.`,
+        description: `### **Understanding Cursor-Based Pagination**
+
+Traditional pagination uses \`OFFSET\` and \`LIMIT\`:
+- \`SELECT * FROM posts ORDER BY time DESC LIMIT 10 OFFSET 20\`
+- Problem: If new posts are added, the offset becomes stale
+
+**Cursor-Based Pagination** uses a "cursor" (a token representing position):
+- Client sends cursor: \`"eyJmcmllbmRzIjoiMTAwIiw..."\`
+- Server decodes it, fetches items after that position
+- Returns new cursor for next page
+
+**Why We Need Multi-Source Cursors:**
+- We're reading from 3 different services (Friends, Groups, Ads)
+- Each service has its own position/offset
+- We need to encode all 3 positions into one token
+
+---
+
+### **Method 1: \`encode(cursors)\`**
+
+**Parameters:**
+- \`cursors\`: An object mapping source names to their last-seen IDs
+- Example: \`{ friends: 'id_100', groups: 'id_55', ads: 'id_12' }\`
+
+**What You Need to Do:**
+
+1. **Convert to JSON String**:
+   - Use \`JSON.stringify(cursors)\` to convert the object to a string
+   - Example: \`'{"friends":"id_100","groups":"id_55","ads":"id_12"}'\`
+
+2. **Encode to Base64**:
+   - In Node.js: \`Buffer.from(jsonString).toString('base64')\`
+   - In browser: \`btoa(jsonString)\` (though \`btoa\` has limitations with Unicode)
+   - This creates an opaque token the client can't read/modify
+
+3. **Return the Base64 String**:
+   - Example: \`"eyJmcmllbmRzIjoiaWRfMTAwIiwiZ3JvdXBzIjoiaWRfNTUiLCJhZHMiOiJpZF8xMiJ9"\`
+
+**Edge Cases:**
+- What if \`cursors\` is empty? (Encode empty object: \`{}\`)
+- What if a source is missing? (Include it as \`null\` or omit it - be consistent)
+- What if IDs contain special characters? (JSON.stringify handles this)
+
+**Example:**
+\`\`\`javascript
+encode({ friends: 'id_100', groups: 'id_55' }) →
+  JSON.stringify → '{"friends":"id_100","groups":"id_55"}' →
+  Base64 → 'eyJmcmllbmRzIjoiaWRfMTAwIiwiZ3JvdXBzIjoiaWRfNTV9'
+\`\`\`
+
+---
+
+### **Method 2: \`decode(token)\`**
+
+**Parameters:**
+- \`token\`: A Base64-encoded string (the cursor token)
+
+**What You Need to Do:**
+
+1. **Decode from Base64**:
+   - In Node.js: \`Buffer.from(token, 'base64').toString('utf-8')\`
+   - In browser: \`atob(token)\` (with Unicode handling if needed)
+   - This gives you the JSON string
+
+2. **Parse JSON**:
+   - Use \`JSON.parse(jsonString)\` to convert back to an object
+   - This gives you the original \`cursors\` object
+
+3. **Return the Object**:
+   - Example: \`{ friends: 'id_100', groups: 'id_55', ads: 'id_12' }\`
+
+**Edge Cases:**
+- What if token is \`null\` or empty? (Return empty object \`{}\` or handle as "start from beginning")
+- What if token is malformed? (Handle JSON.parse errors gracefully)
+- What if token is invalid Base64? (Handle decoding errors)
+
+**Example:**
+\`\`\`javascript
+decode('eyJmcmllbmRzIjoiaWRfMTAwIn0=') →
+  Base64 decode → '{"friends":"id_100"}' →
+  JSON.parse → { friends: 'id_100' }
+\`\`\`
+
+---
+
+### **Implementation Hint:**
+
+\`\`\`javascript
+encode(cursors) {
+  const json = JSON.stringify(cursors);
+  // In Node.js environment:
+  return Buffer.from(json).toString('base64');
+  // Or in browser (with limitations):
+  // return btoa(unescape(encodeURIComponent(json)));
+}
+
+decode(token) {
+  if (!token) return {};
+  try {
+    const json = Buffer.from(token, 'base64').toString('utf-8');
+    return JSON.parse(json);
+  } catch (e) {
+    return {}; // Handle errors gracefully
+  }
+}
+\`\`\`
+
+**Why Base64?**
+- **Opaque**: Client can't easily modify it (security through obscurity)
+- **URL-Safe**: Can be passed in URLs without encoding issues
+- **Compact**: Reasonably efficient encoding
+- **Standard**: Widely supported
+
+**Real-World Usage:**
+- Twitter, Facebook, Instagram all use cursor-based pagination
+- Cursors are opaque tokens - clients don't need to understand the structure
+- Allows server to change pagination logic without breaking clients`,
         initialCode: `module.exports = {
   encode(cursors) {
     // JSON stringify -> Base64
@@ -2219,13 +6001,192 @@ Our "Global Cursor" must encode the state of *each* sub-stream.
         id: 's3',
         title: 'Feed Service',
         fileName: 'Feed.js',
-        description: `**Task:** The Aggregator.
-Implement \`getFeed(globalCursorToken, limit)\`.
-1. Decode token to get last-seen IDs for Friends, Groups, and Ads.
-2. Fetch next batch from each service (mocked as \`system.db.scan\` or similar).
-3. Merge them using your Merger.
-4. Slice to \`limit\`.
-5. Generate new cursor token from the last items of the used streams.`,
+        description: `### **Understanding the Feed Aggregator**
+
+This is the orchestrator that brings everything together. It:
+1. Decodes the cursor to know where we left off
+2. Fetches new items from each source
+3. Merges them into one sorted timeline
+4. Returns a page of results with a new cursor
+
+**The Challenge:**
+- Multiple data sources (Friends, Groups, Ads)
+- Each has its own pagination state
+- Need to merge and return a unified feed
+- Must generate a new cursor for the next page
+
+---
+
+### **Method: \`getFeed(token, limit)\`**
+
+**Parameters:**
+- \`token\`: The cursor token (Base64 string) or \`null\` for first page
+- \`limit\`: Maximum number of items to return (e.g., \`10\`, \`20\`)
+
+**What You Need to Do:**
+
+### **Step 1: Decode the Cursor**
+
+1. **Handle Null/Empty Token**:
+   - If \`token\` is \`null\` or empty, start from the beginning
+   - Set all cursor positions to \`null\` or empty strings
+   - Example: \`{ friends: null, groups: null, ads: null }\`
+
+2. **Decode the Token**:
+   - Use \`Tokenizer.decode(token)\` to get the cursor object
+   - Example: \`{ friends: 'id_100', groups: 'id_55', ads: 'id_12' }\`
+   - This tells you the last-seen ID for each source
+
+---
+
+### **Step 2: Fetch from Each Source**
+
+1. **For Each Source (Friends, Groups, Ads)**:
+   - Use the cursor position to fetch items **after** that ID
+   - In this challenge, use the \`mockSources\` object provided
+   - Filter items where \`id > cursorId\` (or handle \`null\` cursor as "get all")
+   - Take a reasonable batch size (e.g., \`limit * 2\` to ensure enough items after merging)
+
+2. **Handle Missing Cursors**:
+   - If a source's cursor is missing/null, fetch from the beginning
+   - Example: If \`cursors.friends\` is \`null\`, fetch all friends items
+
+**Example:**
+\`\`\`javascript
+const cursors = decode(token); // { friends: 'id_100', groups: null, ads: 'id_12' }
+
+// Fetch friends items after id_100
+const friendsItems = mockSources.friends.filter(item => 
+  !cursors.friends || item.id > cursors.friends
+);
+
+// Fetch groups items (no cursor, get all)
+const groupsItems = mockSources.groups.filter(item => 
+  !cursors.groups || item.id > cursors.groups
+);
+
+// Fetch ads items after id_12
+const adsItems = mockSources.ads.filter(item => 
+  !cursors.ads || item.id > cursors.ads
+);
+\`\`\`
+
+---
+
+### **Step 3: Merge the Streams**
+
+1. **Use Your Merger**:
+   - Call \`Merger.merge([friendsItems, groupsItems, adsItems])\`
+   - This returns a single sorted array (by time, descending)
+
+2. **Result is Sorted**:
+   - The merged array is already sorted
+   - Newest items first (descending by timestamp)
+
+---
+
+### **Step 4: Slice to Limit**
+
+1. **Take First N Items**:
+   - Use \`merged.slice(0, limit)\` to get exactly \`limit\` items
+   - These are the items you'll return to the client
+
+2. **Track Which Items Were Used**:
+   - You need to know which items from which sources were included
+   - This is needed to generate the new cursor
+
+---
+
+### **Step 5: Generate New Cursor**
+
+1. **Find Last Item from Each Source**:
+   - Look through the returned items
+   - For each source, find the last (oldest) item that came from that source
+   - Track its ID as the new cursor position for that source
+
+2. **Handle Sources with No Items**:
+   - If a source contributed no items, keep its old cursor (or set to \`null\`)
+
+3. **Encode the New Cursor**:
+   - Create object: \`{ friends: 'new_id', groups: 'new_id', ads: 'new_id' }\`
+   - Use \`Tokenizer.encode(newCursors)\` to create the new token
+
+**Example:**
+\`\`\`javascript
+// Returned items: [
+//   {id:100, t:100, source:'friends'},
+//   {id:95, t:95, source:'groups'},
+//   {id:90, t:90, source:'friends'}
+// ]
+
+// New cursors:
+// friends: 'id_90' (last friends item used)
+// groups: 'id_95' (last groups item used)
+// ads: null (no ads items used, keep old cursor or null)
+
+const newCursors = { friends: 'id_90', groups: 'id_95', ads: null };
+const nextCursor = Tokenizer.encode(newCursors);
+\`\`\`
+
+---
+
+### **Return the Result**
+
+Return an object with:
+- \`items\`: The array of merged, sorted items (up to \`limit\`)
+- \`nextCursor\`: The Base64-encoded cursor for the next page
+
+**Example Return:**
+\`\`\`javascript
+{
+  items: [
+    {id:100, t:100},
+    {id:95, t:95},
+    {id:90, t:90}
+  ],
+  nextCursor: "eyJmcmllbmRzIjoiaWRfOTAiLCJncm91cHMiOiJpZF85NSJ9"
+}
+\`\`\`
+
+---
+
+### **Edge Cases:**
+
+- **Empty Token (First Page)**: Start from beginning for all sources
+- **No Items Available**: Return empty array, cursor stays the same or resets
+- **Fewer Items Than Limit**: Return what's available, generate cursor from those
+- **Source Has No More Items**: Keep old cursor for that source (or set to null)
+
+**Implementation Flow:**
+\`\`\`javascript
+async getFeed(token, limit) {
+  // 1. Decode
+  const cursors = token ? Tokenizer.decode(token) : {};
+  
+  // 2. Fetch
+  const friends = mockSources.friends.filter(...);
+  const groups = mockSources.groups.filter(...);
+  const ads = mockSources.ads.filter(...);
+  
+  // 3. Merge
+  const merged = Merger.merge([friends, groups, ads]);
+  
+  // 4. Slice
+  const items = merged.slice(0, limit);
+  
+  // 5. Generate cursor
+  const newCursors = calculateNewCursors(items, cursors);
+  const nextCursor = Tokenizer.encode(newCursors);
+  
+  return { items, nextCursor };
+}
+\`\`\`
+
+**Why This Pattern is Used:**
+- **Scalability**: Each source can be a separate microservice
+- **Flexibility**: Can add/remove sources without changing client code
+- **Performance**: Parallel fetching, efficient merging
+- **User Experience**: Smooth infinite scroll with proper pagination`,
         initialCode: `const Merger = require('./Merger.js');
 const Tokenizer = require('./Tokenizer.js');
 
@@ -2292,9 +6253,118 @@ You are architecting a Global Key-Value Store.
         id: 's1',
         title: 'Replication Log',
         fileName: 'Replicator.js',
-        description: `**Task:** Capture changes (CDC).
-Implement \`logChange(key, value, timestamp)\`.
-Store these changes in an append-only log so followers can fetch them.`,
+        description: `### **Understanding Change Data Capture (CDC)**
+
+The Master (Primary) database needs to capture every write operation so that Followers (Replicas) can replay them. This is done through an **Append-Only Log** (also called Write-Ahead Log or WAL).
+
+**Why Append-Only?**
+- **Efficiency**: Appending is O(1), very fast
+- **Durability**: Can be written to disk sequentially (fast I/O)
+- **Ordering**: Maintains the exact order of operations
+- **Recovery**: Can replay the log to reconstruct state
+
+**The Log Structure:**
+- Each entry represents one change: \`{ key, value, timestamp, index }\`
+- Entries are numbered sequentially (index) for easy tracking
+- Followers use the index to know where they left off
+
+---
+
+### **Method 1: \`logChange(key, value, timestamp)\`**
+
+**Parameters:**
+- \`key\`: The key that was written (e.g., \`"user_123"\`)
+- \`value\`: The new value (e.g., \`"John Doe"\`)
+- \`timestamp\`: When the change occurred (e.g., \`1234567890\`)
+
+**What You Need to Do:**
+
+1. **Create a Log Entry**:
+   - Build an object representing this change
+   - Include: \`key\`, \`value\`, \`timestamp\`
+   - Optionally include an \`index\` (sequence number) for tracking
+
+2. **Append to the Log**:
+   - Add the entry to the \`changeLog\` array
+   - Use \`changeLog.push(entry)\` to append
+   - This maintains chronological order
+
+3. **Track Index** (optional but recommended):
+   - Maintain a counter for the log index
+   - Each entry gets a unique, sequential index
+   - This helps followers track their position
+
+**Edge Cases:**
+- What if the same key is updated multiple times? (Each update is a separate log entry - this is correct)
+- What if timestamp is missing? (Use current time or require it)
+- What if the log grows too large? (In production, you'd implement log rotation/compaction)
+
+**Example:**
+\`\`\`javascript
+logChange('user_123', 'John', 1000) → 
+  changeLog = [{key:'user_123', value:'John', timestamp:1000, index:0}]
+
+logChange('user_456', 'Jane', 1001) → 
+  changeLog = [
+    {key:'user_123', value:'John', timestamp:1000, index:0},
+    {key:'user_456', value:'Jane', timestamp:1001, index:1}
+  ]
+\`\`\`
+
+---
+
+### **Method 2: \`getLogs(sinceIndex)\`**
+
+**Parameters:**
+- \`sinceIndex\`: The index to start from (exclusive - returns entries after this index)
+
+**What You Need to Do:**
+
+1. **Slice the Log**:
+   - Use \`changeLog.slice(sinceIndex)\` to get all entries starting from \`sinceIndex\`
+   - This returns entries with index \`sinceIndex\`, \`sinceIndex+1\`, etc.
+
+2. **Return the Array**:
+   - Return the sliced array of log entries
+   - Followers use this to get new changes
+
+**Edge Cases:**
+- What if \`sinceIndex\` is beyond the log length? (Return empty array)
+- What if \`sinceIndex\` is negative? (Handle gracefully - maybe return all or throw error)
+
+**Example:**
+\`\`\`javascript
+// changeLog has 5 entries (indices 0-4)
+getLogs(2) → returns entries at indices [2, 3, 4]
+getLogs(5) → returns [] (no new entries)
+getLogs(0) → returns all entries [0, 1, 2, 3, 4]
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+const changeLog = [];
+let nextIndex = 0;
+
+logChange(k, v, t) {
+  const entry = {
+    key: k,
+    value: v,
+    timestamp: t,
+    index: nextIndex++
+  };
+  changeLog.push(entry);
+}
+
+getLogs(sinceIndex) {
+  return changeLog.slice(sinceIndex);
+}
+\`\`\`
+
+**Why This Pattern is Used:**
+- **Asynchronous Replication**: Master doesn't wait for followers
+- **Efficient**: Followers can batch fetch multiple changes
+- **Resumable**: Followers track their position and can resume after failures
+- **Audit Trail**: Complete history of all changes`,
         initialCode: `const changeLog = [];
 module.exports = {
   logChange(k, v, t) {
@@ -2310,9 +6380,160 @@ module.exports = {
         id: 's2',
         title: 'Follower Sync',
         fileName: 'Follower.js',
-        description: `**Task:** Apply updates.
-The Follower node polls the Master's log.
-Implement \`sync()\`. It should fetch new logs from Master and update its local \`db\`. Keep track of \`lastAppliedIndex\`.`,
+        description: `### **Understanding Follower Synchronization**
+
+The Follower (Replica) needs to periodically fetch new changes from the Master and apply them to its local database. This is called **polling** or **pull-based replication**.
+
+**The Sync Process:**
+1. Follower knows its current position (\`lastAppliedIndex\`)
+2. Follower asks Master: "Give me all changes after index X"
+3. Master returns the new log entries
+4. Follower applies each change to its local database
+5. Follower updates its position
+
+**Why Polling?**
+- Simple to implement
+- Follower controls when to sync
+- Can handle network partitions gracefully
+- Trade-off: Some replication lag (eventual consistency)
+
+---
+
+### **Method: \`sync()\`**
+
+**What You Need to Do:**
+
+### **Step 1: Fetch New Log Entries**
+
+1. **Call Master's getLogs**:
+   - Use \`Master.getLogs(lastIndex)\` to fetch all entries after your last applied index
+   - This returns an array of log entries: \`[{key, value, timestamp, index}, ...]\`
+
+2. **Handle Empty Result**:
+   - If the array is empty, there are no new changes
+   - You can return early or just update nothing
+
+---
+
+### **Step 2: Apply Each Change**
+
+1. **Iterate Through Log Entries**:
+   - For each entry in the fetched logs:
+     - Extract \`key\` and \`value\`
+     - Update your local \`db\`: \`db[key] = value\`
+     - This applies the change to your replica
+
+2. **Track the Highest Index**:
+   - As you process entries, track the highest \`index\` you've seen
+   - This becomes your new \`lastAppliedIndex\`
+
+**Example:**
+\`\`\`javascript
+// Fetched logs:
+[
+  {key: 'user_123', value: 'John', index: 5},
+  {key: 'user_456', value: 'Jane', index: 6}
+]
+
+// Apply:
+db['user_123'] = 'John';  // index 5
+db['user_456'] = 'Jane';  // index 6
+
+// Update lastIndex to 6
+\`\`\`
+
+---
+
+### **Step 3: Update Position**
+
+1. **Update lastAppliedIndex**:
+   - Set \`lastIndex\` to the highest index you processed
+   - If no entries were fetched, \`lastIndex\` stays the same
+   - This allows you to resume from the correct position on the next sync
+
+2. **Handle Out-of-Order** (advanced):
+   - In this simple implementation, we assume entries are in order
+   - In production, you might need to handle gaps or reordering
+
+---
+
+### **Step 4: Return Current State**
+
+1. **Return the Database**:
+   - Return the \`db\` object to show the current state
+   - This is useful for testing and verification
+
+---
+
+### **Edge Cases:**
+
+- **No New Changes**: If \`getLogs\` returns empty array, do nothing and return current db
+- **Gaps in Indices**: If Master has entries 0,1,3,5 (missing 2,4), handle gracefully
+- **Network Failures**: In production, you'd retry on failure
+- **Concurrent Syncs**: In production, you'd use locks to prevent concurrent syncs
+
+**Example Flow:**
+\`\`\`javascript
+// Initial state: lastIndex = 0, db = {}
+
+// Master has entries at indices 0, 1, 2
+sync() →
+  getLogs(0) → [
+    {key:'a', value:'1', index:0},
+    {key:'b', value:'2', index:1},
+    {key:'c', value:'3', index:2}
+  ] →
+  Apply: db['a']='1', db['b']='2', db['c']='3' →
+  lastIndex = 2 →
+  return db = {a:'1', b:'2', c:'3'}
+
+// Next sync: lastIndex = 2
+sync() →
+  getLogs(2) → [
+    {key:'d', value:'4', index:3}
+  ] →
+  Apply: db['d']='4' →
+  lastIndex = 3 →
+  return db = {a:'1', b:'2', c:'3', d:'4'}
+\`\`\`
+
+**Implementation Hint:**
+\`\`\`javascript
+const Master = require('./Replicator.js');
+const db = {};
+let lastIndex = 0;
+
+async sync() {
+  const newEntries = Master.getLogs(lastIndex);
+  
+  if (newEntries.length === 0) {
+    return db; // No new changes
+  }
+  
+  let maxIndex = lastIndex;
+  for (const entry of newEntries) {
+    db[entry.key] = entry.value;
+    if (entry.index > maxIndex) {
+      maxIndex = entry.index;
+    }
+  }
+  
+  lastIndex = maxIndex;
+  return db;
+}
+\`\`\`
+
+**Why This Pattern is Used:**
+- **Asynchronous**: Master doesn't block on followers
+- **Resilient**: Followers can catch up after network partitions
+- **Scalable**: Multiple followers can sync independently
+- **Simple**: Easy to understand and implement
+
+**Real-World Considerations:**
+- **Replication Lag**: Followers are always slightly behind (eventual consistency)
+- **Conflict Resolution**: What if Master and Follower both write? (Master wins in this model)
+- **Compaction**: Logs grow forever - need rotation/compaction strategies
+- **Bi-Directional**: Some systems allow writes to followers (more complex)`,
         initialCode: `const Master = require('./Replicator.js');
 const db = {};
 let lastIndex = 0;
@@ -2367,10 +6588,120 @@ A Bloom Filter is a space-efficient probabilistic data structure.
 -   It never yields a False Negative (saying "Available" when it's taken).
 -   It uses an array of bits and multiple hash functions.
 
+### **Understanding Bloom Filters**
+
+**The Core Idea:**
+- Use a bit array of size \`M\` (e.g., 100 bits)
+- Use \`K\` different hash functions (e.g., K=3)
+- To **add** an element: hash it with all K functions, set those K bit positions to 1
+- To **check** an element: hash it with all K functions, if ALL K bits are 1 → "Maybe in set", else → "Definitely not in set"
+
+**Why It Works:**
+- If an element was added, all K bits will be 1 (definite match)
+- If an element wasn't added, the K bits might still be 1 (false positive) due to hash collisions
+- But if ANY bit is 0, the element was definitely never added (no false negatives)
+
+---
+
 ### **Your Tasks**
-1.  **Hash Functions**: Simulate multiple hash functions.
-2.  **Add Operation**: Map a string to \`K\` bit positions and set them to 1.
-3.  **Check Operation**: Verify if all \`K\` bit positions are 1.`,
+
+### **Task 1: Hash Functions**
+
+You need **K hash functions** (typically K=2-5). Each function should map a string to a different bit position.
+
+**Simple Approach:**
+- Use the provided hash logic as a base
+- Create K variations by adding different seeds/offsets
+- Example: \`hash1(str) = simpleHash(str + "1")\`, \`hash2(str) = simpleHash(str + "2")\`
+
+**Implementation:**
+\`\`\`javascript
+function hash1(str) {
+  let hash = 0;
+  for(let i=0; i<str.length; i++) {
+    hash = (hash + str.charCodeAt(i) * 31) % this.store.length;
+  }
+  return hash;
+}
+
+function hash2(str) {
+  let hash = 0;
+  for(let i=0; i<str.length; i++) {
+    hash = (hash + str.charCodeAt(i) * 37) % this.store.length;
+  }
+  return hash;
+}
+// ... more hash functions
+\`\`\`
+
+---
+
+### **Task 2: Add Operation**
+
+**Method: \`add(str)\`**
+
+**What You Need to Do:**
+
+1. **Hash the String K Times**:
+   - Call each of your K hash functions with the input string
+   - Each returns a bit position (index in the array)
+
+2. **Set All K Bits to 1**:
+   - For each hash result, set \`store[index] = 1\`
+   - This "marks" that this element (or something that hashes to these positions) was added
+
+**Example:**
+\`\`\`javascript
+add('hello') →
+  hash1('hello') = 5 → store[5] = 1
+  hash2('hello') = 12 → store[12] = 1
+  hash3('hello') = 8 → store[8] = 1
+// Now bits at positions 5, 12, 8 are all set to 1
+\`\`\`
+
+---
+
+### **Task 3: Check Operation**
+
+**Method: \`exists(str)\`**
+
+**What You Need to Do:**
+
+1. **Hash the String K Times**:
+   - Call each of your K hash functions with the input string
+   - Get the same K bit positions as when adding
+
+2. **Check All K Bits**:
+   - If **ALL** K bits are 1 → return \`true\` ("Maybe in set")
+   - If **ANY** bit is 0 → return \`false\` ("Definitely not in set")
+
+**Example:**
+\`\`\`javascript
+exists('hello') →
+  hash1('hello') = 5 → check store[5] == 1? Yes
+  hash2('hello') = 12 → check store[12] == 1? Yes
+  hash3('hello') = 8 → check store[8] == 1? Yes
+  All are 1 → return true
+
+exists('world') →
+  hash1('world') = 3 → check store[3] == 1? No (0)
+  Any bit is 0 → return false (definitely not added)
+\`\`\`
+
+---
+
+### **Edge Cases and Considerations**
+
+- **False Positives**: Possible! If 'foo' and 'bar' hash to overlapping positions, checking 'baz' might return true even if never added
+- **False Negatives**: Never! If an element was added, all its bits are 1, so it will always return true
+- **Array Bounds**: Make sure hash results are within \`[0, store.length-1]\`
+- **Hash Collisions**: Different strings might hash to same position - this is expected and causes false positives
+
+**Why This is Useful:**
+- **Fast**: O(K) time for both add and check (K is small, typically 2-5)
+- **Space Efficient**: Only stores bits, not the actual data
+- **No False Negatives**: Perfect for "definitely not in set" checks
+- **Trade-off**: Some false positives, but that's acceptable for many use cases`,
     initialCode: `class BloomFilter {
   constructor(size = 100) {
     this.store = new Array(size).fill(0);
@@ -2544,9 +6875,158 @@ A Trie is a tree where each node represents a character.
 -   The path from root to a node represents a prefix.
 -   This allows us to find all words starting with "app" by traversing to the node 'p' and then collecting all its children.
 
-### **Your Tasks**
-1.  **Insert**: Add words to the tree, creating new nodes for new characters.
-2.  **Search**: Traverse the tree to the end of the prefix and use DFS/BFS to collect all valid words below that point.`,
+### **Understanding the Trie Structure**
+
+**Node Structure:**
+- Each node has:
+  - \`children\`: Object mapping character → child node (e.g., \`{a: Node, b: Node}\`)
+  - \`isEnd\`: Boolean indicating if a word ends at this node
+
+**Example Trie:**
+\`\`\`
+        (root)
+       /   |   \\
+      a    b    c
+     /|    |    |
+    p t    a    a
+   /| |    |    |
+  p l n    n    t
+  | | |    |    |
+  l e a    a    (end)
+  | | |    |
+  e (end) (end) (end)
+\`\`\`
+Words: "apple", "apt", "app", "banana", "cat"
+
+---
+
+### **Task 1: Insert Operation**
+
+**Method: \`insert(word)\`**
+
+**What You Need to Do:**
+
+1. **Start at Root**:
+   - Begin traversal from \`this.root\`
+
+2. **Traverse/Create Path**:
+   - For each character in the word:
+     - Check if current node has a child for this character
+     - If not, create a new node and add it to \`children[char]\`
+     - Move to that child node
+     - Continue for all characters
+
+3. **Mark End of Word**:
+   - After processing all characters, set \`currentNode.isEnd = true\`
+   - This marks that a complete word ends at this node
+
+**Example:**
+\`\`\`javascript
+insert('app') →
+  root → 'a' (create if needed) → 'p' (create) → 'p' (create) → mark isEnd=true
+
+insert('apple') →
+  root → 'a' (exists) → 'p' (exists) → 'p' (exists) → 'l' (create) → 'e' (create) → mark isEnd=true
+\`\`\`
+
+**Edge Cases:**
+- Empty word? (Handle gracefully - maybe mark root as end)
+- Word already exists? (Just mark isEnd again - idempotent)
+- Word is prefix of existing word? (Just mark isEnd, don't recreate path)
+
+---
+
+### **Task 2: Search Operation**
+
+**Method: \`search(prefix)\`**
+
+**What You Need to Do:**
+
+1. **Traverse to Prefix End**:
+   - Start at root
+   - For each character in prefix, move to the corresponding child
+   - If at any point a child doesn't exist, return \`[]\` (no words with this prefix)
+
+2. **Collect All Words from This Node**:
+   - Once at the prefix end node, use **DFS (Depth-First Search)** to collect all words
+   - Traverse all children recursively
+   - When you find a node with \`isEnd = true\`, you've found a complete word
+   - Build the word by tracking the path from prefix end to current node
+
+3. **Return Array of Words**:
+   - Return all words that start with the given prefix
+
+**DFS Implementation:**
+\`\`\`javascript
+function dfs(node, currentWord, results) {
+  if (node.isEnd) {
+    results.push(currentWord); // Found a complete word
+  }
+  
+  // Explore all children
+  for (const [char, childNode] of Object.entries(node.children)) {
+    dfs(childNode, currentWord + char, results);
+  }
+}
+\`\`\`
+
+**Example:**
+\`\`\`javascript
+// Trie has: "app", "apple", "apply", "application"
+search('app') →
+  Traverse: root → 'a' → 'p' → 'p' (found prefix end) →
+  DFS from 'p' node:
+    - 'l' → 'e' (isEnd) → "apple"
+    - 'l' → 'y' (isEnd) → "apply"  
+    - 'l' → 'i' → 'c' → 'a' → 't' → 'i' → 'o' → 'n' (isEnd) → "application"
+    - Also check if current node is end → "app"
+  Return: ["app", "apple", "apply", "application"]
+\`\`\`
+
+**Edge Cases:**
+- Prefix doesn't exist? (Return empty array)
+- Prefix is a complete word? (Include it in results)
+- Empty prefix? (Return all words in trie)
+- Multiple words with same prefix? (Return all of them)
+
+**Complete Implementation Flow:**
+\`\`\`javascript
+search(prefix) {
+  let current = this.root;
+  
+  // Traverse to prefix end
+  for (const char of prefix) {
+    if (!current.children[char]) {
+      return []; // Prefix doesn't exist
+    }
+    current = current.children[char];
+  }
+  
+  // Collect all words from this node
+  const results = [];
+  this.dfs(current, prefix, results);
+  return results;
+}
+
+dfs(node, word, results) {
+  if (node.isEnd) results.push(word);
+  for (const [char, child] of Object.entries(node.children)) {
+    this.dfs(child, word + char, results);
+  }
+}
+\`\`\`
+
+**Why This is Efficient:**
+- **Insert**: O(M) where M = word length (must traverse/create path)
+- **Search**: O(M + N) where M = prefix length, N = number of results
+- **Space**: O(ALPHABET_SIZE * N * M) where N = number of words, M = average length
+- **Much faster than linear search**: O(1) to find prefix, then only explore relevant subtree
+
+**Real-World Usage:**
+- Autocomplete (Google Search, IDEs)
+- Spell checkers
+- IP routing (longest prefix matching)
+- Contact search in phones`,
     initialCode: `class TrieNode {
   constructor() {
     this.children = {};
@@ -3216,9 +7696,172 @@ function solution(node) {
     pLevel: 'p3',
     category: 'dsa',
     expectedTime: '45m',
-    description: `**Scenario:** We need to store a tree structure in a file or send it over a network (JSON is easy, but try doing it with a string format).
+    description: `### **Introduction**
 
-**Task:** Design an algorithm to serialize a binary tree to a string and deserialize it back to a tree.`,
+We need to store a tree structure in a file or send it over a network (JSON is easy, but try doing it with a string format).
+
+**The Challenge:**
+- Convert a binary tree to a compact string representation
+- Reconstruct the exact same tree from that string
+- Must preserve structure, values, and null nodes
+
+**Why This Matters:**
+- **Storage**: Save tree structures efficiently
+- **Transmission**: Send trees over network
+- **Persistence**: Store in databases, files
+- **LeetCode Problem**: Classic interview question (LeetCode 297)
+
+---
+
+### **Understanding Binary Tree Serialization**
+
+**Tree Structure:**
+\`\`\`
+    1
+   / \\
+  2   3
+     / \\
+    4   5
+\`\`\`
+
+**Serialization Options:**
+1. **Pre-order Traversal**: "1,2,null,null,3,4,null,null,5,null,null"
+2. **Level-order Traversal**: "1,2,3,null,null,4,5"
+3. **JSON**: \`{"val":1,"left":{"val":2},"right":{"val":3}}\`
+
+For this challenge, we'll use a **string format** with a delimiter (comma).
+
+---
+
+### **Task 1: Serialize (Tree → String)**
+
+**Method: \`serialize(root)\`**
+
+**What You Need to Do:**
+
+1. **Handle Null Node**:
+   - If \`root\` is \`null\`, return a marker (e.g., \`"null"\` or \`"#"\`)
+   - This preserves the tree structure
+
+2. **Pre-order Traversal**:
+   - Visit: **Root → Left → Right**
+   - Serialize root value
+   - Recursively serialize left subtree
+   - Recursively serialize right subtree
+
+3. **Join with Delimiter**:
+   - Join all values with a delimiter (comma: \`","\`)
+   - Return the string
+
+**Example:**
+\`\`\`javascript
+// Tree: {val: 1, left: {val: 2}, right: {val: 3}}
+serialize(root) →
+  Visit 1 → "1"
+  Visit left (2) → "2"
+  Visit left's left (null) → "null"
+  Visit left's right (null) → "null"
+  Visit right (3) → "3"
+  Visit right's left (null) → "null"
+  Visit right's right (null) → "null"
+  Join: "1,2,null,null,3,null,null"
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+serialize(root) {
+  if (!root) return "null";
+  
+  const left = serialize(root.left);
+  const right = serialize(root.right);
+  
+  return \`\${root.val},\${left},\${right}\`;
+}
+\`\`\`
+
+---
+
+### **Task 2: Deserialize (String → Tree)**
+
+**Method: \`deserialize(data)\`**
+
+**What You Need to Do:**
+
+1. **Split String**:
+   - Split by delimiter: \`data.split(',')\`
+   - This gives an array: \`["1", "2", "null", "null", "3", ...]\`
+
+2. **Use Index Pointer**:
+   - Maintain an index to track current position
+   - Start at index 0
+   - Increment after processing each node
+
+3. **Pre-order Reconstruction**:
+   - Read current value
+   - If "null", return \`null\`
+   - Otherwise, create node with that value
+   - Recursively build left subtree
+   - Recursively build right subtree
+
+4. **Return Root**:
+   - Return the reconstructed root node
+
+**Example:**
+\`\`\`javascript
+// String: "1,2,null,null,3,null,null"
+deserialize("1,2,null,null,3,null,null") →
+  Read "1" → Create node(1)
+  Read "2" → Create node(2) as left child
+  Read "null" → left's left = null
+  Read "null" → left's right = null
+  Read "3" → Create node(3) as right child
+  Read "null" → right's left = null
+  Read "null" → right's right = null
+  Return: {val: 1, left: {val: 2}, right: {val: 3}}
+\`\`\`
+
+**Implementation:**
+\`\`\`javascript
+deserialize(data) {
+  const values = data.split(',');
+  let index = 0;
+  
+  function build() {
+    if (index >= values.length) return null;
+    
+    const val = values[index++];
+    if (val === "null" || val === "") return null;
+    
+    const node = { val: parseInt(val) };
+    node.left = build();
+    node.right = build();
+    
+    return node;
+  }
+  
+  return build();
+}
+\`\`\`
+
+---
+
+### **Edge Cases**
+
+- **Empty Tree**: \`null\` → serialize to "null" → deserialize back to null
+- **Single Node**: \`{val: 1}\` → "1,null,null" → reconstructs correctly
+- **Unbalanced Tree**: Works with any tree structure
+- **Large Values**: Handle integer parsing correctly
+
+**Why This Algorithm Works:**
+- **Pre-order + Null Markers**: Uniquely identifies tree structure
+- **Recursive**: Natural fit for tree operations
+- **Complete**: Preserves all nodes and null positions
+
+**Real-World Usage:**
+- Database storage
+- Network transmission
+- Configuration files
+- Backup/restore operations`,
     initialCode: `const serializer = {
   serialize(root) { return "[]"; },
   deserialize(data) { return null; }
@@ -3494,9 +8137,147 @@ function solution(op) {
     pLevel: 'p3',
     category: 'dsa',
     expectedTime: '45m',
-    description: `**Scenario:** Real-time analytics. We need the maximum stock price in the last 10 minutes, updated every minute.
+    description: `### **Introduction**
 
-**Task:** Given an array \`nums\` and sliding window size \`k\`, return the max sliding window.`,
+Real-time analytics. We need the maximum stock price in the last 10 minutes, updated every minute.
+
+**The Problem:**
+- You have an array of numbers (e.g., stock prices over time)
+- You need to find the maximum in each sliding window of size \`k\`
+- Window slides one position at a time
+
+**Example:**
+- Array: \`[1, 3, -1, -3, 5, 3, 6, 7]\`
+- Window size: \`k = 3\`
+- Windows: \`[1,3,-1]\`, \`[3,-1,-3]\`, \`[-1,-3,5]\`, \`[-3,5,3]\`, \`[5,3,6]\`, \`[3,6,7]\`
+- Maxes: \`[3, 3, 5, 5, 6, 7]\`
+
+**Naive Approach (O(nk)):**
+- For each window, scan all k elements to find max
+- Too slow for large arrays
+
+**Optimal Approach (O(n)):**
+- Use a **Monotonic Deque** (double-ended queue)
+- Maintain elements in decreasing order
+- O(1) to get max, O(1) amortized to update
+
+---
+
+### **Understanding Monotonic Deque**
+
+A **monotonic deque** maintains elements in **decreasing order**:
+- Front: Maximum element (always)
+- Back: Minimum element in deque
+- New elements are added from back, removing smaller elements
+
+**Why It Works:**
+- If new element is larger than back elements, they can never be max
+- Remove them to keep deque decreasing
+- Front always has the current maximum
+
+---
+
+### **Algorithm Steps**
+
+1. **Initialize Deque**:
+   - Use an array to simulate a deque
+   - Store **indices** (not values) to track window boundaries
+
+2. **Process First Window**:
+   - For indices 0 to k-1:
+     - Remove indices from back if their values are <= current value
+     - Add current index to back
+     - This maintains decreasing order
+
+3. **Slide Window**:
+   - For each new position:
+     - **Remove out-of-window indices**: If front index is outside window, remove it
+     - **Remove smaller elements**: Remove indices from back if their values <= current
+     - **Add current index**: Add to back
+     - **Record max**: Front index points to maximum value
+
+4. **Return Results**:
+   - Return array of maximum values for each window
+
+---
+
+### **Implementation**
+
+\`\`\`javascript
+function solution({ nums, k }) {
+  const result = [];
+  const deque = []; // Store indices, not values
+  
+  for (let i = 0; i < nums.length; i++) {
+    // Remove indices outside current window
+    while (deque.length > 0 && deque[0] <= i - k) {
+      deque.shift(); // Remove from front
+    }
+    
+    // Remove indices whose values are <= current value
+    // (They can never be max in current or future windows)
+    while (deque.length > 0 && nums[deque[deque.length - 1]] <= nums[i]) {
+      deque.pop(); // Remove from back
+    }
+    
+    // Add current index to back
+    deque.push(i);
+    
+    // If we've processed at least k elements, record max
+    if (i >= k - 1) {
+      result.push(nums[deque[0]]); // Front has max index
+    }
+  }
+  
+  return result;
+}
+\`\`\`
+
+---
+
+### **Step-by-Step Example**
+
+\`\`\`javascript
+nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3
+
+i=0: deque=[0], nums[0]=1
+i=1: Remove nothing, nums[1]=3 > nums[0]=1 → remove 0, deque=[1], nums[1]=3
+i=2: Remove nothing, nums[2]=-1 < nums[1]=3 → keep, deque=[1,2]
+     Window [0,2] complete → result.push(nums[1]=3) → [3]
+
+i=3: deque[0]=1 is in window [1,3] ✓, nums[3]=-3 < nums[2]=-1 → keep
+     deque=[1,2,3], Window [1,3] → result.push(3) → [3,3]
+
+i=4: deque[0]=1 is in window [2,4] ✓, nums[4]=5 > all → remove all
+     deque=[4], Window [2,4] → result.push(5) → [3,3,5]
+
+... and so on
+\`\`\`
+
+---
+
+### **Edge Cases**
+
+- **k = 1**: Each element is its own window → return original array
+- **k = nums.length**: One window covering entire array → return [max]
+- **k > nums.length**: Invalid? Return empty or max of whole array
+- **All Same Values**: Deque maintains all indices, front is always max
+- **Decreasing Array**: Front always has latest (largest) value
+- **Increasing Array**: Each new element replaces all previous
+
+**Time Complexity**: O(n) - each element added/removed at most once
+**Space Complexity**: O(k) - deque stores at most k indices
+
+**Why This is Optimal:**
+- **Linear Time**: Much faster than O(nk) naive approach
+- **Amortized O(1)**: Each operation is O(1) on average
+- **Efficient**: No redundant comparisons
+
+**Real-World Usage:**
+- Stock price analysis
+- Network traffic monitoring
+- Sensor data processing
+- Real-time analytics dashboards`,
     initialCode: `function solution({ nums, k }) {
   // Monotonic Queue
   return [];

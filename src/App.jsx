@@ -1,21 +1,26 @@
-import { useState } from 'react'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import FrontendChallenges from './components/FrontendChallenges'
 import BackendChallenges from './components/BackendChallenges'
 import Home from './components/Home'
 
-function Navigation({ currentView, setView }) {
+function Navigation() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isFrontend = location.pathname.startsWith('/frontend')
+  const isBackend = location.pathname.startsWith('/backend')
+
   return (
     <nav className="main-nav">
       <button 
-        className={`nav-link ${currentView === 'frontend' ? 'active' : ''}`}
-        onClick={() => setView('frontend')}
+        className={`nav-link ${isFrontend ? 'active' : ''}`}
+        onClick={() => navigate('/frontend')}
       >
         Frontend
       </button>
       <button 
-        className={`nav-link ${currentView === 'backend' ? 'active' : ''}`}
-        onClick={() => setView('backend')}
+        className={`nav-link ${isBackend ? 'active' : ''}`}
+        onClick={() => navigate('/backend')}
       >
         Backend
       </button>
@@ -24,15 +29,20 @@ function Navigation({ currentView, setView }) {
 }
 
 function App() {
-  const [view, setView] = useState('home') // 'home', 'frontend', 'backend'
+  const location = useLocation()
+  const showNav = location.pathname.startsWith('/frontend') || location.pathname.startsWith('/backend')
 
   return (
     <div className="app-layout">
-      {view !== 'home' && <Navigation currentView={view} setView={setView} />}
+      {showNav && <Navigation />}
       
-      {view === 'home' && <Home onSelect={setView} />}
-      {view === 'frontend' && <FrontendChallenges />}
-      {view === 'backend' && <BackendChallenges />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/frontend" element={<FrontendChallenges />} />
+        <Route path="/frontend/:slug" element={<FrontendChallenges />} />
+        <Route path="/backend" element={<BackendChallenges />} />
+        <Route path="/backend/:slug" element={<BackendChallenges />} />
+      </Routes>
     </div>
   )
 }
