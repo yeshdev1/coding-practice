@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import FrontendChallenges from './components/FrontendChallenges'
@@ -30,6 +31,21 @@ function Navigation() {
 
 function App() {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  // On initial load, if ?p=<path> is present (from 404 fallback), navigate there
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const p = params.get('p')
+    if (p) {
+      const target = p.startsWith('/') ? p : `/${p}`
+      // Replace to avoid polluting history
+      navigate(target, { replace: true })
+    }
+  // we intentionally only react to location.search to avoid loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search])
+
   const showNav = location.pathname.startsWith('/frontend') || location.pathname.startsWith('/backend')
 
   return (
