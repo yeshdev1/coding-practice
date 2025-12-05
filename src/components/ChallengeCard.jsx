@@ -2,10 +2,15 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createSlug } from '../utils/slug';
 
-export default function ChallengeCard({ challenge, onClick }) {
+export default function ChallengeCard({ challenge, onClick, section: explicitSection }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const section = location.pathname.startsWith('/frontend') ? 'frontend' : 'backend';
+  const derivedSection = location.pathname.startsWith('/frontend')
+    ? 'frontend'
+    : location.pathname.startsWith('/react-core')
+      ? 'react-core'
+      : 'backend';
+  const section = explicitSection || derivedSection;
   
   const handleClick = () => {
     if (challenge.slug) {

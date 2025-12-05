@@ -87,7 +87,7 @@ const CodePlayground = ({ initialCode, scope = {}, expectedTime, solutionCompone
         </div>
         <div className="editor-container">
             <Editor
-            height="400px"
+            height="100%"
             defaultLanguage="javascript"
             defaultValue={initialCode}
             onChange={(value) => setCode(value)}

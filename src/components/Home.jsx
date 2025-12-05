@@ -18,6 +18,14 @@ export default function Home() {
         </div>
         
         <div 
+          className="domain-card reactcore"
+          onClick={() => navigate('/react-core')}
+        >
+          <h2>React Core</h2>
+          <p>React 18 fundamentals: rendering, hooks, concurrency</p>
+        </div>
+        
+        <div 
           className="domain-card backend"
           onClick={() => navigate('/backend')}
         >
