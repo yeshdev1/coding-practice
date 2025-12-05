@@ -457,6 +457,229 @@ export default function App() {
 }
 `
   },
+  // Hard
+  {
+    id: 'suspense-streaming',
+    title: 'Suspense + Streaming Data',
+    difficulty: 'hard',
+    pLevel: 'p2',
+    expectedTime: '30m',
+    category: 'rendering',
+    slug: 'suspense-streaming-data',
+    description: `
+### Goal
+Simulate a page that streams data in chunks and uses Suspense to show placeholders until each chunk resolves.
+
+### Steps
+1) Wire a fake async fetch (Promise with setTimeout) that resolves after 800–1200ms.
+2) Wrap the async component in \`<React.Suspense fallback={...}>\` to show skeletons while loading.
+3) Render two sections that resolve at different times; ensure each has its own fallback.
+4) Add a "refresh" button that re-triggers the fetch (simulate a new promise) and shows fallbacks again.
+`,
+    initialCode: `
+const fetchChunk = (label, ms) => new Promise(res => setTimeout(() => res(\`Loaded: \${label}\`), ms));
+
+function Chunk({ label, delay }) {
+  const data = React.use(fetchChunk(label, delay));
+  return <div style={{ padding: 8, background: '#2d2d2d', borderRadius: 6 }}>{data}</div>;
+}
+
+export default function App() {
+  const [key, setKey] = React.useState(0);
+  return (
+    <div style={{ padding: 16, color: '#fff' }} key={key}>
+      <h2>Suspense + Streaming</h2>
+      <button onClick={() => setKey(k => k + 1)}>Refresh</button>
+      <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+        <React.Suspense fallback={<div style={{ padding: 8, background: '#111' }}>Loading fast chunk...</div>}>
+          <Chunk label="Fast data" delay={900} />
+        </React.Suspense>
+        <React.Suspense fallback={<div style={{ padding: 8, background: '#111' }}>Loading slow chunk...</div>}>
+          <Chunk label="Slow data" delay={1400} />
+        </React.Suspense>
+      </div>
+    </div>
+  );
+}
+`
+  },
+  {
+    id: 'error-boundaries',
+    title: 'Error Boundaries & Recovery',
+    difficulty: 'hard',
+    pLevel: 'p2',
+    expectedTime: '25m',
+    category: 'rendering',
+    slug: 'error-boundaries-recovery',
+    description: `
+### Goal
+Handle rendering errors gracefully and allow user-driven recovery.
+
+### Steps
+1) Create an Error Boundary class component with \`componentDidCatch\` and \`getDerivedStateFromError\`.
+2) Show a friendly fallback with a "Try again" button.
+3) Simulate an error by throwing inside a child when a button is clicked.
+4) On retry, reset the error boundary state so the child renders again without a full page reload.
+`,
+    initialCode: `
+class Boundary extends React.Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err) { console.error('Caught error:', err); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 12, background: '#2d1f1f', color: '#fdd' }}>
+          <p>Something went wrong.</p>
+          <button onClick={() => this.setState({ hasError: false })}>Try again</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function Flaky() {
+  const [crash, setCrash] = React.useState(false);
+  if (crash) throw new Error('Boom');
+  return (
+    <div style={{ padding: 10, background: '#222', color: '#fff' }}>
+      <p>Safe content here.</p>
+      <button onClick={() => setCrash(true)}>Crash me</button>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <div style={{ padding: 16, color: '#fff' }}>
+      <h2>Error Boundaries</h2>
+      <Boundary>
+        <Flaky />
+      </Boundary>
+    </div>
+  );
+}
+`
+  },
+  {
+    id: 'ref-forwarding-portals',
+    title: 'Ref Forwarding + Portals',
+    difficulty: 'hard',
+    pLevel: 'p2',
+    expectedTime: '25m',
+    category: 'refs',
+    slug: 'ref-forwarding-portals',
+    description: `
+### Goal
+Build a tooltip/input combo where the tooltip renders in a portal, but the parent can still focus the input via forwarded refs.
+
+### Steps
+1) Create an InputWithTooltip component that forwards its ref to the inner input.
+2) Render the tooltip into \`document.body\` via \`createPortal\`.
+3) Position the tooltip near the input using \`getBoundingClientRect\` (layout effect).
+4) Expose focus() to parent via the forwarded ref; add a "Focus Input" button in parent to prove it works.
+`,
+    initialCode: `
+import { createPortal } from 'react-dom';
+
+const TooltipInput = React.forwardRef(function TooltipInput({ tooltip }, ref) {
+  const inputRef = React.useRef(null);
+  React.useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current && inputRef.current.focus()
+  }));
+
+  const [pos, setPos] = React.useState({ top: 0, left: 0 });
+  React.useLayoutEffect(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 8, left: rect.left });
+    }
+  }, []);
+
+  return (
+    <>
+      <input ref={inputRef} placeholder="Hover me" style={{ padding: 8 }} />
+      {createPortal(
+        <div style={{ position: 'absolute', top: pos.top, left: pos.left, background: '#111', color: '#fff', padding: 8, borderRadius: 4 }}>
+          {tooltip}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+});
+
+export default function App() {
+  const ref = React.useRef(null);
+  return (
+    <div style={{ padding: 16, color: '#fff' }}>
+      <h2>Ref Forwarding + Portal Tooltip</h2>
+      <TooltipInput ref={ref} tooltip="I live in a portal!" />
+      <button onClick={() => ref.current && ref.current.focus()} style={{ marginTop: 12 }}>
+        Focus Input
+      </button>
+    </div>
+  );
+}
+`
+  },
+  {
+    id: 'profiler-optimization',
+    title: 'Profiler-Guided Optimization',
+    difficulty: 'hard',
+    pLevel: 'p2',
+    expectedTime: '22m',
+    category: 'performance',
+    slug: 'profiler-guided-optimization',
+    description: `
+### Goal
+Use React.Profiler to find slow subtrees and memoize them.
+
+### Steps
+1) Wrap a heavy list component in \`<React.Profiler id=\"heavy\" onRender={...}>\`.
+2) Log commits and durations; identify re-render causes (props/state).
+3) Apply \`React.memo\` and/or \`useMemo/useCallback\` to stop unnecessary renders.
+4) Show before/after render counts in the console.
+`,
+    initialCode: `
+function HeavyList({ items, onSelect }) {
+  console.log('HeavyList render', items.length);
+  return (
+    <ul>
+      {items.map((it) => (
+        <li key={it} onClick={() => onSelect(it)} style={{ cursor: 'pointer', padding: 4 }}>
+          {it}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function App() {
+  const [filter, setFilter] = React.useState('');
+  const [selected, setSelected] = React.useState(null);
+  const data = React.useMemo(() => Array.from({ length: 200 }, (_, i) => 'Item ' + i), []);
+  const filtered = React.useMemo(() => data.filter(d => d.includes(filter)), [data, filter]);
+  const onSelect = React.useCallback((it) => setSelected(it), []);
+
+  const onProfile = (id, phase, actualDuration) => {
+    console.log('[Profiler]', id, phase, 'duration:', actualDuration);
+  };
+
+  return (
+    <div style={{ padding: 16 }}>
+      <h2>Profiler Guided Optimization</h2>
+      <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="filter..." />
+      <React.Profiler id="heavy" onRender={onProfile}>
+        <HeavyList items={filtered} onSelect={onSelect} />
+      </React.Profiler>
+      <div style={{ marginTop: 8 }}>Selected: {selected || 'none'}</div>
+    </div>
+  );
+}
+`
+  },
 ];
 
 export default reactCoreChallenges;
