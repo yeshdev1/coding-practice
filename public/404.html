@@ -5,17 +5,18 @@
     <title>Redirecting…</title>
     <meta http-equiv="refresh" content="0; url=/coding-practice/" />
     <script>
-      // GitHub Pages SPA fallback: redirect to base path with original path as query
+      // GitHub Pages SPA fallback: redirect to the app base with the original path appended
+      // so BrowserRouter (basename=/coding-practice) can hydrate the correct route.
       (function() {
         var l = window.location;
         var base = '/coding-practice/';
+        // If already at the base, let the app handle it
+        if (l.pathname.startsWith(base)) return;
+        // Strip leading slashes from the original path
         var path = l.pathname.replace(/^\/+/, '');
         var search = l.search || '';
         var hash = l.hash || '';
-        // If already at base, just reload
-        if (l.pathname.startsWith(base)) return;
-        // Preserve the original path in query so the app can read it if needed
-        var redirect = base + '?p=' + encodeURIComponent(path) + search + hash;
+        var redirect = base + path + search + hash;
         l.replace(redirect);
       })();
     </script>
