@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <meta http-equiv="refresh" content="0; url=/coding-practice/" />
+    <script>
+      // GitHub Pages SPA fallback: redirect to base path with original path as query
+      (function() {
+        var l = window.location;
+        var base = '/coding-practice/';
+        var path = l.pathname.replace(/^\/+/, '');
+        var search = l.search || '';
+        var hash = l.hash || '';
+        // If already at base, just reload
+        if (l.pathname.startsWith(base)) return;
+        // Preserve the original path in query so the app can read it if needed
+        var redirect = base + '?p=' + encodeURIComponent(path) + search + hash;
+        l.replace(redirect);
+      })();
+    </script>
+  </head>
+  <body>
+    Redirecting…
+  </body>
+</html>
+
