@@ -260,6 +260,14 @@
   padding: 4px 12px;
   border-radius: 6px;
   border: 1px solid #333;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.challenge-timer > * {
+  flex: 0 0 auto;
 }
 
 .timer-display {
@@ -274,6 +282,7 @@
 .timer-controls {
   display: flex;
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .timer-btn {
@@ -305,6 +314,7 @@
 .timer-settings {
   display: flex;
   gap: 10px;
+  flex-wrap: nowrap;
   font-size: 0.8rem;
   color: #aaa;
 }
@@ -320,6 +330,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: nowrap;
   font-size: 0.8rem;
   color: #aaa;
 }
