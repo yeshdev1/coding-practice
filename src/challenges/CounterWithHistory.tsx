@@ -48,7 +48,7 @@ const CounterWithHistoryImplementation = () => {
     )
 }
 
-export default function CounterWithHistory() {
+export default function CounterWithHistory({ showSolutionPanel = false }: { showSolutionPanel?: boolean }) {
   const initialCode = `
 export default function Counter() {
   const [count, setCount] = React.useState(0);
@@ -111,7 +111,18 @@ export default function Counter() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} scope={{ CounterWithHistoryImplementation }} solutionComponent={CounterWithHistoryImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          scope={{ CounterWithHistoryImplementation }}
+          solutionComponent={CounterWithHistoryImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'State is split into count and history so each concern updates independently.',
+            'Change handler builds the next count first, then logs a clear, user-facing history entry.',
+            'UI keeps controls grouped and renders history as a simple list for easy scanning.',
+          ]}
+         />
       </div>
     </div>
   );

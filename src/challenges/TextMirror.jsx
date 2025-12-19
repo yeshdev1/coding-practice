@@ -23,7 +23,7 @@ const TextMirrorImplementation = () => {
   );
 };
 
-export default function TextMirror() {
+export default function TextMirror({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -64,7 +64,17 @@ export default function TextMirror() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={TextMirrorImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={TextMirrorImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Single text state powers both the textarea and mirrored display for perfect sync.',
+            'Textarea uses controlled value/onChange to prevent divergence between UI and state.',
+            'Mirror box reuses the same content and styles to highlight immediate feedback.',
+          ]}
+         />
       </div>
     </div>
   );

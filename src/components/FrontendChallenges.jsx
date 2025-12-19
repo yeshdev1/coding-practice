@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import reactLogo from '../assets/react.svg'
 import viteLogo from '/vite.svg'
@@ -165,6 +165,13 @@ function FrontendChallenges() {
     expert: filteredChallenges.filter(c => c.difficulty === 'expert'),
   }
 
+  const activeComponent = useMemo(() => {
+    if (!activeChallenge) return null
+    return React.cloneElement(activeChallenge.component, {
+      showSolutionPanel: activeChallenge.difficulty === 'easy',
+    })
+  }, [activeChallenge])
+
   if (activeChallenge) {
     return (
       <div className="challenge-view-container">
@@ -174,7 +181,7 @@ function FrontendChallenges() {
           </button>
         </div>
         <div className="challenge-workspace">
-          {activeChallenge.component}
+          {activeComponent}
         </div>
       </div>
     )

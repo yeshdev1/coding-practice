@@ -22,7 +22,7 @@ const CharacterCounterImplementation = () => {
   );
 };
 
-export default function CharacterCounter() {
+export default function CharacterCounter({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -62,7 +62,17 @@ export default function CharacterCounter() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={CharacterCounterImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={CharacterCounterImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Single source of truth for text plus an explicit limit constant for clarity.',
+            'Textarea uses maxLength to enforce the cap before state updates overflow.',
+            'Count display reuses the same state to avoid drift and adds color feedback at the boundary.',
+          ]}
+         />
       </div>
     </div>
   );

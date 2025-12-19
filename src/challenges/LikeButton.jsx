@@ -36,7 +36,7 @@ const LikeButtonImplementation = () => {
   );
 };
 
-export default function LikeButton() {
+export default function LikeButton({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -90,7 +90,17 @@ export default function LikeButton() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={LikeButtonImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={LikeButtonImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'State keeps the numeric count only; button label formats the message on render.',
+            'Inline styles change color on hover to reinforce clickability without extra CSS.',
+            'Increment handler uses the previous state to avoid race conditions on rapid clicks.',
+          ]}
+         />
       </div>
     </div>
   );

@@ -35,7 +35,7 @@ const SimplePaginationImplementation = () => {
   );
 };
 
-export default function SimplePagination() {
+export default function SimplePagination({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -88,7 +88,17 @@ export default function SimplePagination() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={SimplePaginationImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={SimplePaginationImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Derives start/end indexes from current page to avoid duplicating slice math.',
+            'Guards navigation with Math.max/Math.min so state never leaves valid bounds.',
+            'Renders buttons with disabled states for instant accessibility and UX clarity.',
+          ]}
+         />
       </div>
     </div>
   );

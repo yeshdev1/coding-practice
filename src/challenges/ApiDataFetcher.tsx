@@ -54,7 +54,7 @@ const ApiDataFetcherImplementation = () => {
   );
 }
 
-export default function ApiDataFetcher() {
+export default function ApiDataFetcher({ showSolutionPanel = false }: { showSolutionPanel?: boolean }) {
   const initialCode = `
 // Mock fetch function provided for playground
 const fetchMockData = () => new Promise(resolve => {
@@ -118,7 +118,17 @@ export default function DataFetcher() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={ApiDataFetcherImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={ApiDataFetcherImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Separates loading, data, and error state to model each network phase explicitly.',
+            'Effect runs once on mount to avoid duplicate fetches and keeps UI deterministic.',
+            'Rendering branches early for loading/error before painting the loaded list.',
+          ]}
+         />
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ const ShowHidePasswordImplementation = () => {
   );
 };
 
-export default function ShowHidePassword() {
+export default function ShowHidePassword({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -61,7 +61,17 @@ export default function ShowHidePassword() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={ShowHidePasswordImplementation} />
+        <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={ShowHidePasswordImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Boolean state toggles input type, keeping logic minimal and readable.',
+            'Button label derives from the same state to avoid duplication.',
+            'Container uses simple spacing to keep focus on the input/visibility control.',
+          ]}
+        />
       </div>
     </div>
   );

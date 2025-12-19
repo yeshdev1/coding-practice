@@ -30,7 +30,7 @@ const ListFilterImplementation = () => {
   );
 };
 
-export default function ListFilter() {
+export default function ListFilter({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -77,7 +77,17 @@ export default function ListFilter() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={ListFilterImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={ListFilterImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Keeps the immutable source list separate from the filter text for predictable filtering.',
+            'toLowerCase on both sides prevents case-sensitivity issues without extra libraries.',
+            'Mapping filtered results keeps render cheap while the filter logic stays declarative.',
+          ]}
+         />
       </div>
     </div>
   );

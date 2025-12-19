@@ -37,7 +37,7 @@ const ColorPickerImplementation = () => {
   );
 };
 
-export default function ColorPicker() {
+export default function ColorPicker({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -91,7 +91,17 @@ export default function ColorPicker() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={ColorPickerImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={ColorPickerImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Single color state drives both the swatch and the text value for consistency.',
+            'Native color input handles selection UX while React state stores the hex.',
+            'Layout keeps swatch and text together so users see immediate feedback.',
+          ]}
+         />
       </div>
     </div>
   );

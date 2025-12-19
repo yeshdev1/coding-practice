@@ -28,7 +28,7 @@ const AccordionImplementation = () => {
   );
 };
 
-export default function Accordion() {
+export default function Accordion({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -74,7 +74,17 @@ export default function Accordion() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={AccordionImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={AccordionImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Tracks open item id; toggling the same id collapses without extra branches.',
+            'Maps over static data so markup stays DRY and focused on state changes.',
+            'Button semantics are preserved for accessibility while styling is inline for clarity.',
+          ]}
+         />
       </div>
     </div>
   );

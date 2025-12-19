@@ -43,7 +43,7 @@ const SimpleFormValidationImplementation = () => {
   )
 }
 
-export default function SimpleFormValidation() {
+export default function SimpleFormValidation({ showSolutionPanel = false }: { showSolutionPanel?: boolean }) {
   const initialCode = `
 export default function LoginForm() {
   const [email, setEmail] = React.useState('');
@@ -102,7 +102,17 @@ export default function LoginForm() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={SimpleFormValidationImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={SimpleFormValidationImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Email/password validation is kept inside submit handler to gate successful submits.',
+            'Error state is reset on blur/change to reduce user friction while typing.',
+            'Minimal markup keeps focus on form semantics and validation feedback placement.',
+          ]}
+         />
       </div>
     </div>
   );

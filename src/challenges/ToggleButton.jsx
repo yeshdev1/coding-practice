@@ -22,7 +22,7 @@ const ToggleButtonImplementation = () => {
   );
 };
 
-export default function ToggleButton() {
+export default function ToggleButton({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -61,7 +61,17 @@ export default function ToggleButton() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={ToggleButtonImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={ToggleButtonImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Single boolean state drives both label and styling for minimal branching.',
+            'Inline styles keep the visual feedback colocated with the button logic.',
+            'Handler flips state using the previous value to avoid stale closures.',
+          ]}
+         />
       </div>
     </div>
   );

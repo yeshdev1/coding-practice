@@ -62,7 +62,7 @@ const TodoListImplementation = () => {
   )
 }  
 
-export default function TodoList() {
+export default function TodoList({ showSolutionPanel = false }: { showSolutionPanel?: boolean }) {
   const initialCode = `
 export default function TodoApp() {
   const [todos, setTodos] = React.useState([]);
@@ -133,7 +133,17 @@ export default function TodoApp() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={TodoListImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={TodoListImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'State is colocated: todos array for items, text for the pending input.',
+            'Add/Toggles mutate state immutably to keep React change detection simple.',
+            'UI keeps controls minimal so the behavior focus stays on list interactions.',
+          ]}
+         />
       </div>
     </div>
   );

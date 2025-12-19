@@ -23,7 +23,7 @@ const DarkModeToggleImplementation = () => {
   );
 };
 
-export default function DarkModeToggle() {
+export default function DarkModeToggle({ showSolutionPanel = false }) {
   const initialCode = `
 import React, { useState } from 'react';
 
@@ -63,7 +63,17 @@ export default function DarkModeToggle() {
       
       <div style={{ marginBottom: '20px' }}>
          <h3>Live Playground</h3>
-         <CodePlayground initialCode={initialCode} solutionComponent={DarkModeToggleImplementation} />
+         <CodePlayground
+          initialCode={initialCode}
+          solutionComponent={DarkModeToggleImplementation}
+          showSolutionPanel={showSolutionPanel}
+          solutionCode={initialCode}
+          solutionNotes={[
+            'Boolean mode flag drives both container colors and button text from one source.',
+            'Inline styles keep theme values colocated, reducing the need for global CSS.',
+            'Click handler flips state using the previous value to ensure reliable toggles.',
+          ]}
+         />
       </div>
     </div>
   );
